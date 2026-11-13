@@ -1,15 +1,15 @@
-cmake_minimum_required(VERSION 3.0.2)
+cmake_minimum_required(VERSION 3.8)
 project(sim_env)
-find_package(catkin REQUIRED COMPONENTS
-  roscpp
-  rospy
-  std_msgs
-  message_generation
-  controller_manager
-  gazebo_ros
-  rviz
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+find_package(ament_cmake REQUIRED)
+
+install(
+  DIRECTORY config launch maps meshes models rviz urdf worlds
+  DESTINATION share/${PROJECT_NAME}
 )
 
-catkin_package(
-  CATKIN_DEPENDS urdf xacro
-)
+ament_package()

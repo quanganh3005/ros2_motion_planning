@@ -50,72 +50,108 @@
     <material>Gazebo/FlatBlack</material>
   </gazebo>
 
+  <!-- Gazebo Fortress (Ignition 6) DiffDrive Plugin -->
+  <gazebo>
+    <plugin
+      filename="ignition-gazebo-diff-drive-system"
+      name="ignition::gazebo::systems::DiffDrive">
+      <left_joint>wheel_left_joint</left_joint>
+      <right_joint>wheel_right_joint</right_joint>
+      <wheel_separation>0.287</wheel_separation>
+      <wheel_radius>0.033</wheel_radius>
+      <max_linear_acceleration>1</max_linear_acceleration>
+      <min_linear_acceleration>-1</min_linear_acceleration>
+      <max_angular_acceleration>2</max_angular_acceleration>
+      <min_angular_acceleration>-2</min_angular_acceleration>
+      <max_linear_velocity>0.26</max_linear_velocity>
+      <min_linear_velocity>-0.26</min_linear_velocity>
+      <max_angular_velocity>1.0</max_angular_velocity>
+      <min_angular_velocity>-1.0</min_angular_velocity>
+      <odom_publish_frequency>30</odom_publish_frequency>
+      <topic>/cmd_vel</topic>
+      <odom_topic>/odom</odom_topic>
+      <tf_topic>/tf</tf_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>base_footprint</child_frame_id>
+    </plugin>
+  </gazebo>
+
+  <!-- Gazebo Fortress (Ignition 6) JointStatePublisher Plugin -->
+  <gazebo>
+    <plugin
+      filename="ignition-gazebo-joint-state-publisher-system"
+      name="ignition::gazebo::systems::JointStatePublisher">
+      <topic>/joint_states</topic>
+    </plugin>
+  </gazebo>
+
+  <!-- Gazebo Fortress (Ignition 6) IMU Sensor -->
   <gazebo reference="imu_link">
     <sensor type="imu" name="imu">
       <always_on>true</always_on>
+      <update_rate>100</update_rate>
       <visualize>$(arg imu_visual)</visualize>
+      <topic>/imu</topic>
+      <ignition_frame_id>imu_link</ignition_frame_id>
+      <gz_frame_id>imu_link</gz_frame_id>
+      <frame_id>imu_link</frame_id>
+      <imu>
+        <angular_velocity>
+          <x>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>2e-4</stddev>
+            </noise>
+          </x>
+          <y>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>2e-4</stddev>
+            </noise>
+          </y>
+          <z>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>2e-4</stddev>
+            </noise>
+          </z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>1.7e-2</stddev>
+            </noise>
+          </x>
+          <y>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>1.7e-2</stddev>
+            </noise>
+          </y>
+          <z>
+            <noise type="gaussian">
+              <mean>0.0</mean>
+              <stddev>1.7e-2</stddev>
+            </noise>
+          </z>
+        </linear_acceleration>
+      </imu>
     </sensor>
     <material>Gazebo/Grey</material>
   </gazebo>
 
-  <gazebo>
-    <plugin name="turtlebot3_waffle_controller" filename="libgazebo_ros_diff_drive.so">
-      <commandTopic>cmd_vel</commandTopic>
-      <odometryTopic>odom</odometryTopic>
-      <odometryFrame>odom</odometryFrame>
-      <odometrySource>world</odometrySource>
-      <publishOdomTF>true</publishOdomTF>
-      <robotBaseFrame>base_footprint</robotBaseFrame>
-      <publishWheelTF>false</publishWheelTF>
-      <publishTf>true</publishTf>
-      <publishWheelJointState>false</publishWheelJointState>
-      <legacyMode>false</legacyMode>
-      <updateRate>30</updateRate>
-      <leftJoint>wheel_left_joint</leftJoint>
-      <rightJoint>wheel_right_joint</rightJoint>
-      <wheelSeparation>0.287</wheelSeparation>
-      <wheelDiameter>0.066</wheelDiameter>
-      <wheelAcceleration>1</wheelAcceleration>
-      <wheelTorque>10</wheelTorque>
-      <rosDebugLevel>na</rosDebugLevel>
-    </plugin>
-  </gazebo>
-
-  <gazebo>
-    <plugin name="imu_plugin" filename="libgazebo_ros_imu.so">
-      <alwaysOn>true</alwaysOn>
-      <bodyName>imu_link</bodyName>
-      <frameName>imu_link</frameName>
-      <topicName>imu</topicName>
-      <serviceName>imu_service</serviceName>
-      <gaussianNoise>0.0</gaussianNoise>
-      <updateRate>0</updateRate>
-      <imu>
-        <noise>
-          <type>gaussian</type>
-          <rate>
-            <mean>0.0</mean>
-            <stddev>2e-4</stddev>
-            <bias_mean>0.0000075</bias_mean>
-            <bias_stddev>0.0000008</bias_stddev>
-          </rate>
-          <accel>
-            <mean>0.0</mean>
-            <stddev>1.7e-2</stddev>
-            <bias_mean>0.1</bias_mean>
-            <bias_stddev>0.001</bias_stddev>
-          </accel>
-        </noise>
-      </imu>
-    </plugin>
-  </gazebo>
-
+  <!-- Gazebo Fortress (Ignition 6) LiDAR Sensor -->
   <gazebo reference="base_scan">
     <material>Gazebo/FlatBlack</material>
-    <sensor type="ray" name="lds_lfcd_sensor">
+    <sensor type="gpu_lidar" name="lds_lfcd_sensor">
       <pose>0 0 0 0 0 0</pose>
       <visualize>$(arg laser_visual)</visualize>
-      <update_rate>5</update_rate>
+      <update_rate>10</update_rate>
+      <topic>/scan</topic>
+      <ignition_frame_id>base_scan</ignition_frame_id>
+      <gz_frame_id>base_scan</gz_frame_id>
+      <frame_id>base_scan</frame_id>
       <ray>
         <scan>
           <horizontal>
@@ -126,7 +162,7 @@
           </horizontal>
         </scan>
         <range>
-          <min>0.120</min>
+          <min>0.22</min>
           <max>3.5</max>
           <resolution>0.015</resolution>
         </range>
@@ -136,54 +172,31 @@
           <stddev>0.01</stddev>
         </noise>
       </ray>
-      <plugin name="gazebo_ros_lds_lfcd_controller" filename="libgazebo_ros_laser.so">
-        <topicName>scan</topicName>
-        <frameName>base_scan</frameName>
-      </plugin>
     </sensor>
   </gazebo>
 
+  <!-- Gazebo Fortress (Ignition 6) RGB-D Camera Sensor -->
   <gazebo reference="camera_rgb_frame">
-    <sensor type="depth" name="realsense_R200">
+    <sensor type="rgbd_camera" name="camera">
       <always_on>true</always_on>
       <visualize>$(arg camera_visual)</visualize>
+      <update_rate>30.0</update_rate>
+      <topic>/camera</topic>
+      <ignition_frame_id>camera_rgb_optical_frame</ignition_frame_id>
+      <gz_frame_id>camera_rgb_optical_frame</gz_frame_id>
+      <frame_id>camera_rgb_optical_frame</frame_id>
       <camera>
         <horizontal_fov>1.3439</horizontal_fov>
         <image>
-          <width>1920</width>
-          <height>1080</height>
+          <width>640</width>
+          <height>480</height>
           <format>R8G8B8</format>
         </image>
-        <depth_camera></depth_camera>
         <clip>
           <near>0.03</near>
           <far>100</far>
         </clip>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_openni_kinect.so">
-        <baseline>0.2</baseline>
-        <alwaysOn>true</alwaysOn>
-        <updateRate>30.0</updateRate>
-        <cameraName>camera</cameraName>
-        <frameName>camera_rgb_optical_frame</frameName>
-        <imageTopicName>rgb/image_raw</imageTopicName>
-        <depthImageTopicName>depth/image_raw</depthImageTopicName>
-        <pointCloudTopicName>depth/points</pointCloudTopicName>
-        <cameraInfoTopicName>rgb/camera_info</cameraInfoTopicName>
-        <depthImageCameraInfoTopicName>depth/camera_info</depthImageCameraInfoTopicName>
-        <pointCloudCutoff>0.4</pointCloudCutoff>
-        <hackBaseline>0.07</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-        <CxPrime>0.0</CxPrime>
-        <Cx>0.0</Cx>
-        <Cy>0.0</Cy>
-        <focalLength>0</focalLength>
-        <hackBaseline>0</hackBaseline>
-      </plugin>
     </sensor>
   </gazebo>
 

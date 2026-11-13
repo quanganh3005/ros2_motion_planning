@@ -1,5 +1,28 @@
 <sdf version='1.7'>
   <world name='default'>
+    <!-- Gazebo Fortress (Ignition 6) System Plugins -->
+    <plugin
+      filename="ignition-gazebo-physics-system"
+      name="ignition::gazebo::systems::Physics">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-user-commands-system"
+      name="ignition::gazebo::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-scene-broadcaster-system"
+      name="ignition::gazebo::systems::SceneBroadcaster">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-sensors-system"
+      name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-imu-system"
+      name="ignition::gazebo::systems::Imu">
+    </plugin>
+
     <light name='sun' type='directional'>
       <cast_shadows>1</cast_shadows>
       <pose>0 0 10 0 -0 0</pose>
@@ -1556,7 +1579,7 @@
         <projection_type>perspective</projection_type>
       </camera>
     </gui>
-    <plugin name='collision_map_creator' filename='libcollision_map_creator.so'/>
+    <!-- <plugin name='collision_map_creator' filename='libcollision_map_creator.so'/> -->
     <model name='Untitled'>
       <pose>-0.325001 -0.875178 0 0 -0 0</pose>
       <link name='Wall_10'>
@@ -1741,6 +1764,6 @@
       </link>
       <static>1</static>
     </model>
-    <plugin filename="libcollision_map_creator.so" name="collision_map_creator"/>
+    <!-- <plugin filename="libcollision_map_creator.so" name="collision_map_creator"/> -->
   </world>
 </sdf>

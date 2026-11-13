@@ -1,0 +1,93 @@
+# HƯỚNG DẪN CHẠY MÔ PHỎNG VÀ ĐIỀU HƯỚNG TỪ ĐẦU
+# Hệ thống: ROS 2 Humble & Gazebo Fortress (Ignition 6)
+
+---
+
+### Bước 1: Dọn dẹp tiến trình cũ (nếu có)
+Mở một cửa sổ Terminal và chạy:
+```bash
+cd ~/ros_motion_planning
+./scripts/killpro.sh
+```
+
+---
+
+### Bước 2: Build gói mô phỏng
+Trong Terminal đó, tiến hành build package:
+```bash
+cd ~/ros_motion_planning
+./scripts/build.sh
+```
+> Khi màn hình hiện `Finished <<< sim_env` và `Build successful!` là đã hoàn tất.
+
+---
+
+### Bước 3: Source môi trường làm việc
+Sau khi build xong, bạn source file môi trường:
+```bash
+source install/setup.bash
+```
+
+*(Mẹo: Bạn có thể gõ `echo "source ~/ros_motion_planning/install/setup.bash" >> ~/.bashrc` để các terminal mở sau này tự động nhận diện package mà không cần gõ lại lệnh source).*
+
+---
+
+### Bước 4: Khởi chạy mô phỏng
+
+Tùy theo nhu cầu, bạn có thể chọn một trong hai chế độ:
+
+#### Chế độ A: Chỉ mở Mô phỏng Robot & Thế giới (Gazebo Fortress + RViz2)
+*Chế độ này phù hợp để kiểm tra mô hình 3D, cảm biến LiDAR, camera và điều khiển robot tự do:*
+```bash
+ros2 launch sim_env sim_env.launch.py world:=warehouse robot:=turtlebot3_waffle
+```
+* **Gazebo Fortress** sẽ mở ra hiển thị nhà kho (`warehouse`) cùng robot TurtleBot3 Waffle.
+* **RViz2** sẽ mở ra hiển thị khung TF, mô hình 3D và các tia quét laser đỏ (`/scan`).
+
+---
+
+#### Chế độ B: Mở toàn bộ Mô phỏng + Dẫn đường tự động Nav2 (Khuyên dùng)
+*Chế độ này bao gồm cả Gazebo, RViz2, bản đồ map và ngăn xếp điều hướng tự động Nav2:*
+```bash
+./scripts/main.sh
+```
+*(hoặc lệnh tương đương: `ros2 launch sim_env main.launch.py`)*
+
+*Tùy chọn đổi bản đồ hoặc robot khác nếu muốn:*
+* Danh sách robot hỗ trợ: `turtlebot3_waffle`, `turtlebot3_burger`, `turtlebot3_waffle_pi`, `nanocar`
+* Danh sách thế giới hỗ trợ: `warehouse`, `turtlebot3_world`, `museum`, `empty`
+* Ví dụ:
+```bash
+ros2 launch sim_env main.launch.py world:=turtlebot3_world robot:=turtlebot3_burger
+```
+
+---
+
+### Bước 5: Thử nghiệm điều khiển robot
+
+#### 1. Điều khiển robot chạy bằng bàn phím:
+Mở một **Terminal mới** và gõ:
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+```
+* Bấm các phím:
+  * **`i`**: Tiến lên
+  * **`,`**: Lùi lại
+  * **`j`**: Quay sang trái
+  * **`l`**: Quay sang phải
+  * **`k`**: Dừng lại
+* Bạn sẽ thấy robot trong Gazebo và RViz2 di chuyển mượt mà.
+
+#### 2. Ra lệnh cho robot tự dẫn đường trong RViz2 (khi dùng Chế độ B):
+1. Nhìn lên thanh công cụ trên cùng của **RViz2**, click vào nút **`2D Goal Pose`** (hoặc nhấn phím tắt `g`).
+2. Click và giữ chuột tại vị trí bất kỳ trên bản đồ mà bạn muốn robot đi tới, kéo nhẹ chuột theo hướng robot cần quay đầu tới rồi thả chuột ra.
+3. **Nav2** sẽ lập tức vẽ đường đi màu xanh (`/plan`) và robot tự động tính toán vận tốc, né vật cản để chạy tới đích!
+
+---
+
+### Bước 6: Tắt mô phỏng khi dùng xong
+Khi muốn dừng toàn bộ chương trình, bạn mở một Terminal và chạy:
+```bash
+cd ~/ros_motion_planning
+./scripts/killpro.sh
+```

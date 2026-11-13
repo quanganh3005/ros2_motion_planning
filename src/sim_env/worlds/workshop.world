@@ -14,6 +14,29 @@
 <?xml version="1.0" ?>
 <sdf version='1.6'>
   <world name='default'>
+    <!-- Gazebo Fortress (Ignition 6) System Plugins -->
+    <plugin
+      filename="ignition-gazebo-physics-system"
+      name="ignition::gazebo::systems::Physics">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-user-commands-system"
+      name="ignition::gazebo::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-scene-broadcaster-system"
+      name="ignition::gazebo::systems::SceneBroadcaster">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-sensors-system"
+      name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-imu-system"
+      name="ignition::gazebo::systems::Imu">
+    </plugin>
+
     <include>
       <uri>model://ground_plane</uri>
     </include>
@@ -1736,7 +1759,7 @@
         <projection_type>perspective</projection_type>
       </camera>
     </gui>
-    <plugin filename="libcollision_map_creator.so" name="collision_map_creator"/>
+    <!-- <plugin filename="libcollision_map_creator.so" name="collision_map_creator"/> -->
 
   </world>
 </sdf>

@@ -9,6 +9,8 @@ src/CMakeLists.txt
 devel/
 logs/
 build/
+install/
+log/
 .catkin_tools/
 bin/
 lib/
@@ -54,6 +56,7 @@ qtcreator-*
 
 # Catkin custom files
 CATKIN_IGNORE
+COLCON_IGNORE
 
 # 3rd
 3rd/build/
