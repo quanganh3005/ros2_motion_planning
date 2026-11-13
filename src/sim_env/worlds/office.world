@@ -1,0 +1,757 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="simple_world">
+    <!-- Ignition Gazebo System Plugins -->
+    <plugin
+      filename="ignition-gazebo-physics-system"
+      name="ignition::gazebo::systems::Physics">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-user-commands-system"
+      name="ignition::gazebo::systems::UserCommands">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-scene-broadcaster-system"
+      name="ignition::gazebo::systems::SceneBroadcaster">
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-sensors-system"
+      name="ignition::gazebo::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+    <plugin
+      filename="ignition-gazebo-imu-system"
+      name="ignition::gazebo::systems::Imu">
+    </plugin>
+
+    <!-- Illumination -->
+    <light type="directional" name="sun">
+      <pose>0 0 25 0 0 0</pose>
+      <diffuse>0.85 0.85 0.85 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.3 0.2 -0.9</direction>
+      <cast_shadows>true</cast_shadows>
+    </light>
+
+    <scene>
+      <ambient>0.70 0.70 0.70 1.0</ambient>
+      <background>0.75 0.80 0.85 1.0</background>
+      <shadows>true</shadows>
+      <grid>false</grid>
+    </scene>
+
+    <!-- Ground Plane matching playground.sdf -->
+    <model name="ground_plane">
+      <static>true</static>
+      <link name="link">
+        <collision name="collision">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+        </collision>
+        <visual name="visual">
+          <geometry>
+            <plane>
+              <normal>0 0 1</normal>
+              <size>100 100</size>
+            </plane>
+          </geometry>
+          <material>
+            <diffuse>0.82 0.80 0.78 1.0</diffuse>
+            <ambient>0.82 0.80 0.78 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="office_layout">
+      <static>true</static>
+      <pose>0 0 0 0 0 0</pose>
+      <link name="wall_north">
+        <pose>0.0000 11.0000 1.1000 0 0 0</pose>
+        <collision name="wall_north_col">
+          <geometry>
+            <box><size>26.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_north_vis">
+          <geometry>
+            <box><size>26.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.92 0.92 0.90 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_south">
+        <pose>0.0000 -11.0000 1.1000 0 0 0</pose>
+        <collision name="wall_south_col">
+          <geometry>
+            <box><size>26.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_south_vis">
+          <geometry>
+            <box><size>26.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.92 0.92 0.90 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_west">
+        <pose>-13.0000 0.0000 1.1000 0 0 0</pose>
+        <collision name="wall_west_col">
+          <geometry>
+            <box><size>0.1500 21.8500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_west_vis">
+          <geometry>
+            <box><size>0.1500 21.8500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.92 0.92 0.90 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_east">
+        <pose>13.0000 0.0000 1.1000 0 0 0</pose>
+        <collision name="wall_east_col">
+          <geometry>
+            <box><size>0.1500 21.8500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_east_vis">
+          <geometry>
+            <box><size>0.1500 21.8500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.92 0.92 0.90 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_n_div_w1">
+        <pose>-10.7500 4.5000 1.1000 0 0 0</pose>
+        <collision name="wall_n_div_w1_col">
+          <geometry>
+            <box><size>4.5000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_n_div_w1_vis">
+          <geometry>
+            <box><size>4.5000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_n_div_w2">
+        <pose>-5.0000 4.5000 1.1000 0 0 0</pose>
+        <collision name="wall_n_div_w2_col">
+          <geometry>
+            <box><size>3.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_n_div_w2_vis">
+          <geometry>
+            <box><size>3.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_n_div_e1">
+        <pose>4.5000 4.5000 1.1000 0 0 0</pose>
+        <collision name="wall_n_div_e1_col">
+          <geometry>
+            <box><size>2.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_n_div_e1_vis">
+          <geometry>
+            <box><size>2.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_n_div_e2">
+        <pose>10.2500 4.5000 1.1000 0 0 0</pose>
+        <collision name="wall_n_div_e2_col">
+          <geometry>
+            <box><size>5.5000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_n_div_e2_vis">
+          <geometry>
+            <box><size>5.5000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_s_div_w1">
+        <pose>-10.7500 -4.5000 1.1000 0 0 0</pose>
+        <collision name="wall_s_div_w1_col">
+          <geometry>
+            <box><size>4.5000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_s_div_w1_vis">
+          <geometry>
+            <box><size>4.5000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_s_div_w2">
+        <pose>-5.0000 -4.5000 1.1000 0 0 0</pose>
+        <collision name="wall_s_div_w2_col">
+          <geometry>
+            <box><size>3.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_s_div_w2_vis">
+          <geometry>
+            <box><size>3.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_s_div_e1">
+        <pose>4.7500 -4.5000 1.1000 0 0 0</pose>
+        <collision name="wall_s_div_e1_col">
+          <geometry>
+            <box><size>2.5000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_s_div_e1_vis">
+          <geometry>
+            <box><size>2.5000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_s_div_e2">
+        <pose>10.5000 -4.5000 1.1000 0 0 0</pose>
+        <collision name="wall_s_div_e2_col">
+          <geometry>
+            <box><size>5.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_s_div_e2_vis">
+          <geometry>
+            <box><size>5.0000 0.1500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_nw_conf_east">
+        <pose>-3.5000 7.7500 1.1000 0 0 0</pose>
+        <collision name="wall_nw_conf_east_col">
+          <geometry>
+            <box><size>0.1500 6.3500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_nw_conf_east_vis">
+          <geometry>
+            <box><size>0.1500 6.3500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.22 0.38 0.55 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_ne_work_west">
+        <pose>3.5000 7.7500 1.1000 0 0 0</pose>
+        <collision name="wall_ne_work_west_col">
+          <geometry>
+            <box><size>0.1500 6.3500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_ne_work_west_vis">
+          <geometry>
+            <box><size>0.1500 6.3500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_sw_cafe_east">
+        <pose>-3.5000 -7.7500 1.1000 0 0 0</pose>
+        <collision name="wall_sw_cafe_east_col">
+          <geometry>
+            <box><size>0.1500 6.3500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_sw_cafe_east_vis">
+          <geometry>
+            <box><size>0.1500 6.3500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="wall_se_lab_west">
+        <pose>3.5000 -7.7500 1.1000 0 0 0</pose>
+        <collision name="wall_se_lab_west_col">
+          <geometry>
+            <box><size>0.1500 6.3500 2.2000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="wall_se_lab_west_vis">
+          <geometry>
+            <box><size>0.1500 6.3500 2.2000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.88 0.88 0.86 1.0</diffuse>
+            <ambient>0.45 0.45 0.45 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="conf_table">
+        <pose>-8.2500 7.7500 0.3800 0 0 0</pose>
+        <collision name="conf_table_col">
+          <geometry>
+            <box><size>4.0000 1.6000 0.7600</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="conf_table_vis">
+          <geometry>
+            <box><size>4.0000 1.6000 0.7600</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.38 0.22 0.12 1.0</diffuse>
+            <ambient>0.38 0.22 0.12 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="cubicle_cluster_1">
+        <pose>6.2000 8.5000 0.4500 0 0 0</pose>
+        <collision name="cubicle_cluster_1_col">
+          <geometry>
+            <box><size>2.2000 1.5000 0.9000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="cubicle_cluster_1_vis">
+          <geometry>
+            <box><size>2.2000 1.5000 0.9000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.24 0.42 0.58 1.0</diffuse>
+            <ambient>0.24 0.42 0.58 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="cubicle_cluster_2">
+        <pose>10.2000 8.5000 0.4500 0 0 0</pose>
+        <collision name="cubicle_cluster_2_col">
+          <geometry>
+            <box><size>2.2000 1.5000 0.9000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="cubicle_cluster_2_vis">
+          <geometry>
+            <box><size>2.2000 1.5000 0.9000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.24 0.42 0.58 1.0</diffuse>
+            <ambient>0.24 0.42 0.58 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="desk_pod_3">
+        <pose>6.2000 6.2000 0.3800 0 0 0</pose>
+        <collision name="desk_pod_3_col">
+          <geometry>
+            <box><size>1.8000 1.2000 0.7600</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="desk_pod_3_vis">
+          <geometry>
+            <box><size>1.8000 1.2000 0.7600</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.78 0.65 0.48 1.0</diffuse>
+            <ambient>0.78 0.65 0.48 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="desk_pod_4">
+        <pose>10.2000 6.2000 0.3800 0 0 0</pose>
+        <collision name="desk_pod_4_col">
+          <geometry>
+            <box><size>1.8000 1.2000 0.7600</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="desk_pod_4_vis">
+          <geometry>
+            <box><size>1.8000 1.2000 0.7600</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.78 0.65 0.48 1.0</diffuse>
+            <ambient>0.78 0.65 0.48 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="dining_table_1">
+        <pose>-7.0000 -7.2000 0.3800 0 0 0</pose>
+        <collision name="dining_table_1_col">
+          <geometry>
+            <cylinder><radius>0.6500</radius><length>0.7600</length></cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="dining_table_1_vis">
+          <geometry>
+            <cylinder><radius>0.6500</radius><length>0.7600</length></cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.62 0.44 0.28 1.0</diffuse>
+            <ambient>0.62 0.44 0.28 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="dining_table_2">
+        <pose>-7.0000 -9.2000 0.3800 0 0 0</pose>
+        <collision name="dining_table_2_col">
+          <geometry>
+            <cylinder><radius>0.6500</radius><length>0.7600</length></cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="dining_table_2_vis">
+          <geometry>
+            <cylinder><radius>0.6500</radius><length>0.7600</length></cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.62 0.44 0.28 1.0</diffuse>
+            <ambient>0.62 0.44 0.28 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="lab_office_desk">
+        <pose>6.5000 -8.0000 0.3800 0 0 0</pose>
+        <collision name="lab_office_desk_col">
+          <geometry>
+            <box><size>2.0000 1.0000 0.7600</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="lab_office_desk_vis">
+          <geometry>
+            <box><size>2.0000 1.0000 0.7600</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.62 0.44 0.28 1.0</diffuse>
+            <ambient>0.62 0.44 0.28 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="arena_box_1">
+        <pose>10.5000 -7.0000 0.3500 0 0 0</pose>
+        <collision name="arena_box_1_col">
+          <geometry>
+            <box><size>1.2000 1.2000 0.7000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="arena_box_1_vis">
+          <geometry>
+            <box><size>1.2000 1.2000 0.7000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.22 0.38 0.55 1.0</diffuse>
+            <ambient>0.22 0.38 0.55 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="arena_cyl_1">
+        <pose>10.5000 -9.2000 0.4000 0 0 0</pose>
+        <collision name="arena_cyl_1_col">
+          <geometry>
+            <cylinder><radius>0.4000</radius><length>0.8000</length></cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="arena_cyl_1_vis">
+          <geometry>
+            <cylinder><radius>0.4000</radius><length>0.8000</length></cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.18 0.45 0.50 1.0</diffuse>
+            <ambient>0.18 0.45 0.50 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="reception_desk">
+        <pose>0.0000 2.4000 0.5250 0 0 0</pose>
+        <collision name="reception_desk_col">
+          <geometry>
+            <box><size>2.4000 0.7000 1.0500</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="reception_desk_vis">
+          <geometry>
+            <box><size>2.4000 0.7000 1.0500</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.38 0.22 0.12 1.0</diffuse>
+            <ambient>0.38 0.22 0.12 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="lobby_sofa_w">
+        <pose>-2.5000 0.0000 0.3500 0 0 0</pose>
+        <collision name="lobby_sofa_w_col">
+          <geometry>
+            <box><size>1.6000 0.8000 0.7000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="lobby_sofa_w_vis">
+          <geometry>
+            <box><size>1.6000 0.8000 0.7000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.18 0.45 0.50 1.0</diffuse>
+            <ambient>0.18 0.45 0.50 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="lobby_sofa_e">
+        <pose>2.5000 0.0000 0.3500 0 0 0</pose>
+        <collision name="lobby_sofa_e_col">
+          <geometry>
+            <box><size>1.6000 0.8000 0.7000</size></box>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.2</mu><mu2>0.2</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="lobby_sofa_e_vis">
+          <geometry>
+            <box><size>1.6000 0.8000 0.7000</size></box>
+          </geometry>
+          <material>
+            <diffuse>0.18 0.45 0.50 1.0</diffuse>
+            <ambient>0.18 0.45 0.50 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="lobby_pillar_w">
+        <pose>-1.8000 -1.8000 1.1000 0 0 0</pose>
+        <collision name="lobby_pillar_w_col">
+          <geometry>
+            <cylinder><radius>0.2200</radius><length>2.2000</length></cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="lobby_pillar_w_vis">
+          <geometry>
+            <cylinder><radius>0.2200</radius><length>2.2000</length></cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.90 0.92 0.94 1.0</diffuse>
+            <ambient>0.90 0.92 0.94 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+      <link name="lobby_pillar_e">
+        <pose>1.8000 -1.8000 1.1000 0 0 0</pose>
+        <collision name="lobby_pillar_e_col">
+          <geometry>
+            <cylinder><radius>0.2200</radius><length>2.2000</length></cylinder>
+          </geometry>
+          <surface>
+            <friction>
+              <ode><mu>0.1</mu><mu2>0.1</mu2></ode>
+            </friction>
+          </surface>
+        </collision>
+        <visual name="lobby_pillar_e_vis">
+          <geometry>
+            <cylinder><radius>0.2200</radius><length>2.2000</length></cylinder>
+          </geometry>
+          <material>
+            <diffuse>0.90 0.92 0.94 1.0</diffuse>
+            <ambient>0.90 0.92 0.94 1.0</ambient>
+          </material>
+        </visual>
+      </link>
+    </model>
+  </world>
+</sdf>
