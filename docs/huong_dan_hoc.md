@@ -52,10 +52,10 @@ ros_motion_planning/
 
 ### 2.2. Costmap (Bản đồ chi phí)
 Bản đồ tĩnh chỉ cho biết có vật cản hay không. Nếu robot đi sát vào mép vật cản, nó sẽ rất dễ va quệt do sai số cơ khí hoặc trôi dạt định vị. 
-Vì vậy, hệ thống chuyển bản đồ chiếm chỗ thành **Costmap** với giá trị từ $0 \rightarrow 254$:
+Vì vậy, hệ thống chuyển bản đồ chiếm chỗ thành **Costmap** với giá trị từ **0 đến 254**:
 * **0 (Free Space)**: Đi lại an toàn.
 * **1 – 252 (Inflation Zone)**: Vùng an toàn nở rộng quanh vật cản. Càng gần vật cản, chi phí càng cao theo quy luật suy giảm hàm mũ:
-  $$\text{cost} = \exp\left(-\alpha \cdot (\text{distance} - r_{\text{inscribed}})\right)$$
+  * Công thức: `cost = exp(-alpha * (distance - r_inscribed))`
 * **253 (Inscribed Obstacle)**: Khoảng cách từ tâm robot đến vật cản nhỏ hơn bán kính robot. Robot đi vào đây chắc chắn sẽ va chạm mép.
 * **254 (Lethal Obstacle)**: Điểm va chạm trực tiếp với vật cản thực tế.
 * **255 (No Information)**: Ô chưa có dữ liệu quan sát.
@@ -72,8 +72,8 @@ Cả Global Costmap và Local Costmap đều được ghép từ nhiều tầng 
 | Thuộc tính | Global Costmap | Local Costmap |
 | :--- | :--- | :--- |
 | **Hệ quy chiếu (`global_frame`)** | `map` (tọa độ cố định toàn cầu) | `odom` (gốc tọa độ đo đếm vị trí tương đối) |
-| **Kích thước** | Toàn bộ bản đồ (Cố định, ví dụ $50\text{m} \times 50\text{m}$) | Cửa sổ trượt di động (`rolling_window: true`, ví dụ $3\text{m} \times 3\text{m}$) theo robot |
-| **Tần số cập nhật** | Thấp ($1.0 - 2.0\text{ Hz}$) để tiết kiệm CPU | Cao ($10.0 - 20.0\text{ Hz}$) để phản ứng nhanh với vật cản |
+| **Kích thước** | Toàn bộ bản đồ (Cố định, ví dụ 50m x 50m) | Cửa sổ trượt di động (`rolling_window: true`, ví dụ 3m x 3m) theo robot |
+| **Tần số cập nhật** | Thấp (1.0 - 2.0 Hz) để tiết kiệm CPU | Cao (10.0 - 20.0 Hz) để phản ứng nhanh với vật cản |
 | **Mục đích** | **Global Planner** tìm lộ trình từ điểm xuất phát đến đích | **Local Planner (Controller)** né vật cản động, sinh vận tốc `cmd_vel` |
 | **File cấu hình** | `src/sim_env/config/nav2_params.yaml` (khối `global_costmap`) | `src/sim_env/config/nav2_params.yaml` (khối `local_costmap`) |
 
@@ -95,7 +95,7 @@ virtual bool plan(const common::geometry::Point3d& start,
                   common::geometry::Points3d* expand) = 0;
 ```
 * **Đầu vào**:
-  * `start`, `goal`: Điểm xuất phát và đích đến trong hệ tọa độ thế giới thực $(x, y, \theta)$.
+  * `start`, `goal`: Điểm xuất phát và đích đến trong hệ tọa độ thế giới thực `(x, y, yaw)`.
   * Dữ liệu bản đồ chi phí thông qua con trỏ `costmap_` (`costmap_2d::Costmap2D*`).
 * **Đầu ra**:
   * `path`: Danh sách các điểm liên tiếp nhau tạo thành quỹ đạo toàn cục truyền xuống cho Controller đi theo.
@@ -103,7 +103,7 @@ virtual bool plan(const common::geometry::Point3d& start,
 
 Các hàm bổ trợ có sẵn trong `PathPlanner`:
 * `world2Map(wx, wy, mx, my)`: Đổi tọa độ thực (mét) sang tọa độ ô lưới Costmap.
-* `grid2Index(mx, my)`: Đổi tọa độ 2D $(x, y)$ sang chỉ số 1D trong mảng $1\text{D} = x + y \cdot \text{nx}$.
+* `grid2Index(mx, my)`: Đổi tọa độ 2D (x, y) sang chỉ số 1D trong mảng: `index = x + y * nx`.
 * `index2Grid(i, x, y)`: Đổi chỉ số 1D ngược lại tọa độ 2D.
 * `costmap_->getCharMap()[index]`: Lấy giá trị chi phí tại ô thứ `index` để kiểm tra vật cản.
 
@@ -143,16 +143,21 @@ rviz_file: "sim_env_ros2.rviz"
 
 robots_config:
   - robot1_type: "turtlebot3_waffle"
-    robot1_global_planner: "astar"     # <-- ĐỔI THUẬT TOÁN MUỐN CHẠY TẠI ĐÂY
-    robot1_local_planner: "rpp"
+    robot1_global_planner: "astar"     # <-- ĐỔI GLOBAL PLANNER TẠI ĐÂY
+    robot1_local_planner: "rpp"        # <-- ĐỔI LOCAL PLANNER TẠI ĐÂY
     robot1_x_pos: "0.0"
     robot1_y_pos: "0.0"
     robot1_z_pos: "0.0"
     robot1_yaw: "0.0"
 ```
 
-### 4.2. Danh sách các Global Planner được hỗ trợ
-Điền chính xác từ khóa vào `robot1_global_planner`:
+### 4.2. Danh sách các Planner được hỗ trợ
+
+Mục này được chia thành 2 phần: **Global Planner** (tìm đường toàn cục) và **Local Planner** (bám quỹ đạo và né vật cản thời gian thực).
+
+---
+
+#### A. Danh sách Global Planner (Khai báo tại `robot1_global_planner`)
 
 | Phân loại | Tên khai báo | Mô tả thuật toán |
 | :--- | :--- | :--- |
@@ -174,6 +179,23 @@ robots_config:
 | **Evolutionary** | `aco` | Tối ưu hóa đàn kiến (Ant Colony Optimization) |
 | | `pso` | Tối ưu hóa bầy hạt (Particle Swarm Optimization) |
 | | `ga` | Giải thuật di truyền (Genetic Algorithm) |
+
+---
+
+#### B. Danh sách Local Planner / Controller (Khai báo tại `robot1_local_planner`)
+
+Local Planner nhận đường đi toàn cục (`/plan`), kết hợp dữ liệu cảm biến từ **Local Costmap** để tính toán và phát lệnh vận tốc thực tế `cmd_vel` (`linear.x`, `angular.z`) cho robot:
+
+| Tên khai báo | Tên đầy đủ | Nguyên lý hoạt động & Đặc điểm |
+| :--- | :--- | :--- |
+| `rpp` | **Regulated Pure Pursuit** | Thuật toán bám quỹ đạo hình học kinh điển; tự động điều tiết giảm vận tốc khi vào góc cua gắt hoặc khi áp sát vật cản, chạy rất mượt, ổn định và ít tốn CPU. |
+| `dwa` | **Dynamic Window Approach** | Lấy mẫu không gian vận tốc khả thi (v, w) trong chu kỳ tiếp theo, mô phỏng các quỹ đạo cung tròn và chọn vận tốc tối ưu nhất theo 3 tiêu chí: bám đường, né vật cản và đạt vận tốc cao. |
+| `mpc` | **Model Predictive Control** | Điều khiển dự báo mô hình; giải bài toán tối ưu hóa trong một chân trời dự đoán (predictive horizon), xét đến cả mô hình động học và giới hạn gia tốc của robot. |
+| `pid` | **PID Controller** | Bộ điều khiển kinh điển (Tỉ lệ - Tích phân - Vi phân); tính toán sai số khoảng cách và sai số góc quay đến điểm mục tiêu để sinh lực kéo và quay. |
+| `lqr` | **Linear Quadratic Regulator** | Bộ điều khiển tối ưu phản hồi trạng thái tuyến tính; cân bằng giữa độ chính xác bám đường và năng lượng điều khiển thông qua nghiệm của phương trình Riccati. |
+| `apf` | **Artificial Potential Field** | Trường lực thế nhân tạo; coi điểm đích là nguồn hút và vật cản là nguồn đẩy, tổng hợp lực sẽ định hướng vận tốc cho robot né vật cản cục bộ. |
+| `orca` | **Optimal Reciprocal Collision Avoidance** | Thuật toán né va chạm tối ưu cho hệ đa robot (Multi-agent); mỗi robot tự động gánh một phần trách nhiệm đổi hướng né nhau, tránh rơi vào bế tắc đối đầu. |
+| `static` | **Static Controller** | Giữ robot đứng yên cố định (thường dùng khi chỉ cần kiểm thử thuật toán Global Planner mà không cần robot di chuyển). |
 
 ### 4.3. Các bước chạy kiểm nghiệm
 1. Lưu file `user_config.yaml`.
@@ -208,8 +230,8 @@ std::vector<AStarPathPlanner::Node> AStarPathPlanner::motions_ = {
 ```
 
 ### 5.2. Khởi tạo danh sách mở và đóng
-* `open_list`: Sử dụng `std::priority_queue<Node, std::vector<Node>, Node::compare_cost>` sắp xếp theo tổng chi phí $f(n)$ tăng dần.
-* `closed_list`: Sử dụng `std::unordered_map<int, Node>` để lưu các node đã duyệt, tra cứu độ phức tạp trung bình $O(1)$ theo `id` của node.
+* `open_list`: Sử dụng `std::priority_queue<Node, std::vector<Node>, Node::compare_cost>` sắp xếp theo tổng chi phí `f(n) = g(n) + h(n)` tăng dần.
+* `closed_list`: Sử dụng `std::unordered_map<int, Node>` để lưu các node đã duyệt, tra cứu độ phức tạp trung bình `O(1)` theo `id` của node.
 
 ### 5.3. Vòng lặp chính và kiểm tra va chạm
 ```cpp
@@ -263,9 +285,9 @@ while (!open_list.empty()) {
 ```
 
 > **Bài học rút ra**: 
-> * Khi `is_dijkstra_ = true`, $h = 0 \implies f(n) = g(n)$ (Trở thành thuật toán Dijkstra).
-> * Khi `is_gbfs_ = true`, $g = 0 \implies f(n) = h(n)$ (Trở thành thuật toán Tham lam GBFS).
-> * Khi bình thường, $f(n) = g(n) + h(n)$ (Trở thành A* tiêu chuẩn).
+> * Khi `is_dijkstra_ = true`: `h = 0` => `f(n) = g(n)` (Trở thành thuật toán Dijkstra).
+> * Khi `is_gbfs_ = true`: `g = 0` => `f(n) = h(n)` (Trở thành thuật toán Tham lam GBFS).
+> * Khi bình thường: `f(n) = g(n) + h(n)` (Trở thành A* tiêu chuẩn).
 
 ---
 

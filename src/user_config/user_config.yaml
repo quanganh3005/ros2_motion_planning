@@ -1,11 +1,11 @@
-map: "warehouse"
-world: "warehouse"
+map: "office"
+world: "office"
 rviz_file: "sim_env_ros2.rviz"
 
 robots_config:
-  - robot1_type: "turtlebot3_waffle"
-    robot1_global_planner: "astar"
-    robot1_local_planner: "rpp"
+  - robot1_type: "linorobot2"
+    robot1_global_planner: "gbfs"
+    robot1_local_planner: "lqr"
     robot1_x_pos: "0.0"
     robot1_y_pos: "0.0"
     robot1_z_pos: "0.0"
