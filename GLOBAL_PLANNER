@@ -1,0 +1,441 @@
+# TÀI LIỆU PHÂN TÍCH CHUYÊN SÂU 20 THUẬT TOÁN GLOBAL PLANNER
+# TRONG HỆ THỐNG ROS MOTION PLANNING (ROS 2 HUMBLE)
+
+Tài liệu này phân tích chi tiết toàn bộ **20 thuật toán lập kế hoạch đường đi toàn cục (Global Path Planner)** có trong mã nguồn của dự án tại package [`src/core/path_planner/path_planner`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner).
+
+Tất cả các thuật toán đều kế thừa từ lớp cơ sở trừu tượng [`PathPlanner`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/path_planner.h) và được đóng gói thành Nav2 Global Planner Plugin qua [`PathPlannerNode`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/path_planner_node.h).
+
+---
+
+## MỤC LỤC
+1. [Sơ đồ Phả hệ và Lịch sử Tiến hóa](#1-sơ-đồ-phả-hệ-và-lịch-sử-tiến-hóa)
+2. [Nhóm I: Thuật toán tìm kiếm trên đồ thị ô lưới (Graph-based Planners)](#2-nhóm-i-thuật-toán-tìm-kiếm-trên-đồ-thị-ô-lưới-graph-based-planners)
+   - [1. Dijkstra](#1-dijkstra)
+   - [2. Greedy Best-First Search (GBFS)](#2-greedy-best-first-search-gbfs)
+   - [3. A* (A-Star)](#3-a-a-star)
+   - [4. Jump Point Search (JPS)](#4-jump-point-search-jps)
+   - [5. Lifelong Planning A* (LPA*)](#5-lifelong-planning-a-lpa)
+   - [6. D* (Dynamic A*)](#6-d-dynamic-a)
+   - [7. D* Lite](#7-d-lite)
+   - [8. Theta* (Any-Angle A*)](#8-theta-any-angle-a)
+   - [9. Lazy Theta*](#9-lazy-theta)
+   - [10. Strict Theta* (S-Theta*)](#10-strict-theta-s-theta)
+   - [11. Voronoi Planner](#11-voronoi-planner)
+   - [12. Hybrid A*](#12-hybrid-a)
+   - [13. Lazy Planner](#13-lazy-planner)
+3. [Nhóm II: Thuật toán lấy mẫu ngẫu nhiên (Sample-based Planners)](#3-nhóm-ii-thuật-toán-lấy-mẫu-ngẫu-nhiên-sample-based-planners)
+   - [14. RRT (Rapidly-exploring Random Tree)](#14-rrt-rapidly-exploring-random-tree)
+   - [15. RRT* (Optimal RRT)](#15-rrt-optimal-rrt)
+   - [16. RRT-Connect](#16-rrt-connect)
+   - [17. Informed RRT*](#17-informed-rrt)
+4. [Nhóm III: Thuật toán tiến hóa & tối ưu bầy đàn (Evolutionary & Swarm Planners)](#4-nhóm-iii-thuật-toán-tiến-hóa--tối-ưu-bầy-đàn-evolutionary--swarm-planners)
+   - [18. Particle Swarm Optimization (PSO)](#18-particle-swarm-optimization-pso)
+   - [19. Genetic Algorithm (GA)](#19-genetic-algorithm-ga)
+   - [20. Ant Colony Optimization (ACO)](#20-ant-colony-optimization-aco)
+5. [Bảng Ma trận So sánh Tổng hợp](#5-bảng-ma-trận-so-sánh-tổng-hợp)
+6. [Hướng dẫn Lựa chọn Thuật toán theo Ứng dụng Thực tế](#6-hướng-dẫn-lựa-chọn-thuật-toán-theo-ứng-dụng-thực-tế)
+
+---
+
+## 1. SƠ ĐỒ PHẢ HỆ VÀ LỊCH SỬ TIẾN HÓA
+
+Các thuật toán lập kế hoạch chuyển động không ra đời độc lập mà phát triển theo các nhánh tư tưởng giải quyết các hạn chế của thuật toán tiền nhiệm:
+
+```mermaid
+flowchart TD
+    subgraph GraphBased ["Nhóm I: Graph-Based Planners"]
+        Dijkstra["Dijkstra (1959)<br>Duyệt loang toàn bộ f(n)=g(n)"] --> AStar["A* (1968)<br>Thêm Heuristic f(n)=g(n)+h(n)"]
+        Dijkstra --> GBFS["GBFS<br>Chỉ dùng Heuristic f(n)=h(n)"]
+        
+        AStar --> JPS["JPS (2011)<br>Cắt tỉa ô cờ, phóng tầm nhìn (Jump Points)"]
+        AStar --> Voronoi["Voronoi Planner<br>Ghép GVD để tối đa hóa khoảng cách vật cản"]
+        
+        AStar --> LPAStar["LPA* (2002)<br>Tái lập kế hoạch cục bộ (Incremental)"]
+        LPAStar --> DStarLite["D* Lite (2002)<br>Tìm ngược Goal->Start, thích nghi môi trường"]
+        AStar --> DStar["D* (1994)<br>Dynamic A* cổ điển với thẻ RAISE/LOWER"]
+        
+        AStar --> ThetaStar["Theta* (2007)<br>Any-Angle, Line-of-Sight bỏ răng cưa ô lưới"]
+        ThetaStar --> LazyThetaStar["Lazy Theta* (2010)<br>Trì hoãn kiểm tra Line-of-Sight tiết kiệm CPU"]
+        ThetaStar --> SThetaStar["S-Theta*<br>Thêm biên an toàn tránh góc nhọn vật cản"]
+        
+        AStar --> HybridAStar["Hybrid A* (Stanford 2008)<br>Không gian liên tục (x,y,θ) + Bán kính quay xe Ackermann"]
+        AStar --> LazyPlanner["Lazy Planner<br>Nối thẳng thô và tối giản ô lưới"]
+    end
+
+    subgraph SampleBased ["Nhóm II: Sample-Based Planners"]
+        RRT["RRT (1998)<br>Cây ngẫu nhiên bao phủ không gian"] --> RRTConnect["RRT-Connect (2000)<br>2 cây song song từ Start & Goal gặp nhau"]
+        RRT --> RRTStar["RRT* (2011)<br>Tiệm cận tối ưu nhờ Choose Parent & Rewire"]
+        RRTStar --> InformedRRTStar["Informed RRT* (2014)<br>Giới hạn lấy mẫu trong siêu Elip co dần"]
+    end
+
+    subgraph Evolutionary ["Nhóm III: Evolutionary & Swarm Planners"]
+        BSpline["Đường cong B-Spline (Mã hóa điểm điều khiển)"]
+        BSpline --> PSO["PSO (Tối ưu bầy đàn hạt)"]
+        BSpline --> GA["GA (Thuật toán di truyền)"]
+        BSpline --> ACO["ACO (Thuật toán đàn kiến - Pheromone)"]
+    end
+```
+
+---
+
+## 2. NHÓM I: THUẬT TOÁN TÌM KIẾM TRÊN ĐỒ THỊ Ô LƯỚI (GRAPH-BASED PLANNERS)
+
+Tất cả các thuật toán đồ thị trong dự án đều xuất bản vùng duyệt ô lưới qua topic:
+`GridBased/expand` (Kiểu tin nhắn: `nav_msgs/msg/OccupancyGrid`).
+
+---
+
+### 1. Dijkstra
+* **Mã nguồn:** [`astar_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/astar_planner.h) & [`astar_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/astar_planner.cpp) (Khởi tạo với `dijkstra = true, gbfs = false`).
+* **Công thức toán học:**
+  $$f(n) = g(n)$$
+  Trong đó:
+  - $g(n)$: Chi phí tích lũy từ điểm xuất phát $Start$ đến node hiện tại $n$.
+  - Không sử dụng hàm Heuristic ($h(n) = 0$).
+* **Cách chạy:**
+  1. Đưa node $Start$ vào hàng đợi ưu tiên `open_list` với $g(Start) = 0$.
+  2. Lấy node có $g(n)$ nhỏ nhất ra khỏi `open_list`, đưa vào `closed_list`.
+  3. Mở rộng 8 ô lân cận (ngang/dọc chi phí $1.0$, chéo $\sqrt{2}$). Nếu lân cận chưa duyệt hoặc tìm được đường có $g$ nhỏ hơn, cập nhật lại $g$ và đẩy vào `open_list`.
+  4. Lặp lại cho đến khi node lấy ra là $Goal$.
+* **Đặc điểm & Nhược điểm:**
+  - **Ưu điểm:** Đảm bảo tìm được đường ngắn nhất tuyệt đối trên đồ thị ô lưới.
+  - **Nhược điểm:** Tìm kiếm đẳng hướng (quét hình tròn/elip lan tỏa đều ra mọi phía), duyệt rất nhiều ô không cần thiết nằm ngược hướng với đích.
+
+---
+
+### 2. Greedy Best-First Search (GBFS)
+* **Mã nguồn:** [`astar_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/astar_planner.cpp) (Khởi tạo với `dijkstra = false, gbfs = true`).
+* **Công thức toán học:**
+  $$f(n) = h(n)$$
+  Trong đó:
+  - $h(n) = \sqrt{(x_n - x_{goal})^2 + (y_n - y_{goal})^2}$ (Khoảng cách Euclidean tới đích).
+  - Hoàn toàn bỏ qua chi phí đã đi $g(n)$.
+* **Cách chạy:**
+  1. Hàng đợi `open_list` luôn ưu tiên node có khoảng cách chim bay $h(n)$ gần đích nhất.
+  2. Thuật toán lao thẳng một mạch về phía đích như một mũi tên.
+* **Phát triển & Cải tiến so với Dijkstra:**
+  - **Cải tiến:** Tốc độ tìm kiếm nhanh hơn Dijkstra từ 10 đến 50 lần vì chỉ đi theo hướng mục tiêu, không duyệt lan tỏa về phía sau.
+  - **Hạn chế:** Không đảm bảo đường đi tối ưu (đường tìm được có thể ngoằn ngoèo vòng vèo quanh vật cản vì "tham lam"), dễ bị mắc kẹt lâu trong các ngõ cụt hình chữ U trước khi thoát ra.
+
+---
+
+### 3. A* (A-Star)
+* **Mã nguồn:** [`astar_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/astar_planner.cpp) (Khởi tạo với `dijkstra = false, gbfs = false`).
+* **Công thức toán học:**
+  $$f(n) = g(n) + h(n)$$
+  Trong đó:
+  - $g(n)$: Chi phí thực tế đã đi từ $Start$ đến $n$.
+  - $h(n)$: Chi phí ước lượng từ $n$ đến $Goal$ (sử dụng Euclidean distance). Do $h(n) \le h^*(n)$ (tính Admissible), A* luôn bảo đảm tìm được nghiệm tối ưu.
+* **Cách chạy:**
+  - Là sự kết hợp hoàn hảo giữa Dijkstra và GBFS: vừa hướng về đích nhờ $h(n)$, vừa không đi chệch hướng quá xa nhờ $g(n)$.
+* **Phát triển từ đâu? Đổi mới gì?**
+  - **Phát triển từ Dijkstra:** A* khắc phục trực tiếp nhược điểm quét đẳng hướng vô định của Dijkstra bằng cách cộng thêm hàm ước lượng định hướng $h(n)$, thu hẹp hình quạt quét ô lưới hướng thẳng về phía mục tiêu.
+  - Được xem là thuật toán tiêu chuẩn vàng cho bài toán tìm đường tĩnh trên đồ thị lưới 2D.
+
+---
+
+### 4. Jump Point Search (JPS)
+* **Mã nguồn:** [`jps_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/jps_planner.h) & [`jps_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/jps_planner.cpp).
+* **Công thức toán học:**
+  Kế thừa hàm đánh giá của A*: $f(n) = g(n) + h(n)$.
+* **Phát triển từ đâu? Cải tiến & Đổi mới gì so với A*?**
+  - **Vấn đề của A*:** Trong bản đồ có nhiều khoảng trống (phòng lớn, sân kho), A* duyệt từng ô một, phải đưa hàng ngàn ô trống vào `open_list`, gây nghẽn hàng đợi ưu tiên.
+  - **Đột phá của JPS:** Áp dụng 2 quy tắc cốt lõi:
+    1. **Neighbor Pruning (Cắt tỉa lân cận):** Bỏ qua các ô lân cận mà có thể đi tới từ node cha với chi phí tương đương hoặc nhỏ hơn mà không cần qua node hiện tại.
+    2. **Jumping & Forced Neighbors (Điểm nhảy & Lân cận bắt buộc):** Thay vì bước từng ô, JPS "phóng tia nhìn" (jump) thẳng theo hướng đi (ngang/dọc/chéo) cho tới khi:
+       - Chạm vật cản hoặc chạm Goal.
+       - Phát hiện một **Forced Neighbor** (ô nằm cạnh góc khuất vật cản mà chỉ có thể đến tối ưu nếu rẽ từ điểm nhảy này).
+    3. Chỉ có các **Jump Point** này mới được tạo thành Node và đẩy vào `open_list`.
+* **Đoạn code then chốt trong project:**
+  ```cpp
+  // jps_planner.cpp: Kiểm tra điểm nhảy ngang/dọc và đường chéo
+  void JPSPathPlanner::_jump(const JNode& node, OpenList& open_list) {
+    int dir = calDir(node.id(), node.pid());
+    if (dir == 1 || dir == -1 || dir == nx_ || dir == -nx_) {
+      _checkStraightLine(dir, node, open_list);
+    } else {
+      _checkSlashLine(dir, node, open_list);
+    }
+  }
+  ```
+* **Hiệu quả:** Giảm số lượng phần tử cần lưu trong `open_list` từ 90% đến 98% so với A*, tốc độ tăng gấp 5 - 10 lần nhưng vẫn đảm bảo đường đi tối ưu hoàn toàn trên lưới ô cờ.
+
+---
+
+### 5. Lifelong Planning A* (LPA*)
+* **Mã nguồn:** [`lpa_star_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/lpa_star_planner.h) & [`lpa_star_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/lpa_star_planner.cpp).
+* **Công thức toán học:**
+  Duy trì 2 giá trị ước lượng chi phí cho mỗi đỉnh $s$:
+  - $g(s)$: Chi phí đường đi hiện tại.
+  - $rhs(s)$: Chi phí nhìn trước (one-step lookahead cost):
+    $$rhs(s) = \begin{cases} 0 & \text{nếu } s = Start \\ \min_{s' \in Pred(s)} (g(s') + c(s', s)) & \text{ngược lại} \end{cases}$$
+  - Đỉnh $s$ được gọi là **Locally Consistent** khi và chỉ khi $g(s) = rhs(s)$.
+  - Khóa ưu tiên hai thành phần trong hàng đợi `open_list`:
+    $$k(s) = [k_1(s), k_2(s)] = [\min(g(s), rhs(s)) + h(s), \min(g(s), rhs(s))]$$
+* **Phát triển từ đâu? Đổi mới gì so với A*?**
+  - **Vấn đề của A*:** Mỗi khi môi trường thay đổi cục bộ (có thêm vật cản mới hoặc vật cản dời đi), A* phải xóa bỏ toàn bộ kết quả cũ và tìm lại từ đầu từ điểm $Start$.
+  - **Đổi mới của LPA*:** Khả năng **tái lập kế hoạch tăng dần (Incremental Replanning)**. Khi bản đồ thay đổi, LPA* chỉ đưa những đỉnh bị mất tính nhất quán ($g(s) \neq rhs(s)$) vào hàng đợi để cập nhật lại, tái sử dụng phần lớn cây tìm kiếm đã tính từ lần trước.
+
+---
+
+### 6. D* (Dynamic A*)
+* **Mã nguồn:** [`dstar_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/dstar_planner.h) & [`dstar_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/dstar_planner.cpp).
+* **Công thức toán học:**
+  - Trạng thái các đỉnh được phân loại qua thẻ tag: `NEW`, `OPEN`, `CLOSED`.
+  - Giá trị hàm chi phí $h(X)$ và giá trị nhỏ nhất từng đạt được $k(X)$ (key value).
+  - Lan truyền trạng thái:
+    - Trạng thái **LOWER** ($k(X) = h(X)$): Chi phí giảm, lan truyền sóng tối ưu.
+    - Trạng thái **RAISE** ($k(X) < h(X)$): Chi phí tăng do gặp vật cản mới, lan truyền sóng cảnh báo và tìm đường vòng thay thế.
+* **Phát triển từ đâu? Đổi mới gì?**
+  - Thuật toán D* nguyên bản (Anthony Stentz - 1994) là bước đột phá đầu tiên trên thế giới cho robot di động tự tìm đường trong môi trường chưa biết: Robot vừa đi vừa quét cảm biến, khi phát hiện vật cản mới chặn đường, D* lập tức cập nhật cục bộ tại chỗ và điều chỉnh đường đi mà không cần dừng lại tính từ đầu.
+
+---
+
+### 7. D* Lite
+* **Mã nguồn:** [`dstar_lite_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/dstar_lite_planner.h) & [`dstar_lite_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/dstar_lite_planner.cpp).
+* **Công thức toán học:**
+  Kế thừa nền tảng của LPA*, nhưng tìm ngược từ $Goal$ về vị trí hiện tại của robot $S_{start}$:
+  $$k(s) = [\min(g(s), rhs(s)) + h(S_{start}, s) + k_m, \min(g(s), rhs(s))]$$
+  Trong đó $k_m$ là hệ số bù dịch chuyển (key modifier) cộng dồn khoảng cách di chuyển của robot:
+  $$k_m \leftarrow k_m + h(S_{last}, S_{start})$$
+* **Phát triển từ đâu? Cải tiến gì so với D* cổ điển?**
+  - **So với D* cổ điển:** D* Lite đạt được cùng hiệu năng và kết quả tối ưu như D* nhưng code ngắn hơn, dễ cài đặt hơn rất nhiều (dựa trên lý thuyết toán học của LPA* thay vì máy trạng thái phức tạp RAISE/LOWER của D*).
+  - **So với LPA*:** LPA* chỉ hỗ trợ Start cố định. D* Lite đảo chiều tìm kiếm từ Goal về Start, cho phép vị trí robot (Start) di chuyển liên tục trong không gian mà cây đường đi về Goal vẫn giữ nguyên hiệu lực.
+
+---
+
+### 8. Theta* (Any-Angle A*)
+* **Mã nguồn:** [`theta_star_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/theta_star_planner.h) & [`theta_star_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/theta_star_planner.cpp).
+* **Công thức & Nguyên lý (Khái niệm Path 2):**
+  Trong A* chuẩn, node con $s'$ luôn nhận node hiện tại $s$ làm cha:
+  $$\text{Path 1 (A*): } parent(s') = s, \quad g(s') = g(s) + c(s, s')$$
+  Trong Theta*, thuật toán kiểm tra đường ngắm thẳng (**Line-of-Sight - LOS**) bằng thuật toán Bresenham giữa $parent(s)$ và $s'$:
+  $$\text{Path 2 (Theta*): Nếu } \text{LineOfSight}(parent(s), s') = \text{true thì:}$$
+  $$parent(s') = parent(s), \quad g(s') = g(parent(s)) + \text{dist}(parent(s), s')$$
+* **Phát triển từ đâu? Đổi mới gì so với A*?**
+  - **Vấn đề của A*:** Quỹ đạo của A* bị giới hạn nghiêm ngặt theo các góc rời rạc của ô lưới ($0^\circ, 45^\circ, 90^\circ,...$), tạo ra đường đi hình "răng cưa" thiếu tự nhiên, tốn thêm chiều dài và gây khó khăn cho việc bẻ lái của robot.
+  - **Đổi mới:** Theta* cho phép đường nối xuyên thẳng qua các ô lưới theo mọi góc tùy ý (Any-Angle) nếu giữa 2 điểm không có vật cản che khuất. Quỹ đạo tạo ra gồm các đoạn thẳng dài tắp, cực kỳ mượt mà.
+
+---
+
+### 9. Lazy Theta*
+* **Mã nguồn:** [`lazy_theta_star_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/lazy_theta_star_planner.h) & [`lazy_theta_star_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/lazy_theta_star_planner.cpp).
+* **Phát triển từ đâu? Đổi mới gì so với Theta*?**
+  - **Vấn đề của Theta*:** Việc gọi hàm kiểm tra va chạm Bresenham Line-of-Sight liên tục cho mọi lân cận khi mở rộng đỉnh gây tốn rất nhiều tài nguyên CPU.
+  - **Đổi mới của Lazy Theta* (Alex Nash 2010):**
+    - Áp dụng nguyên lý "lười biếng" (Lazy Evaluation): Khi duyệt lân cận, thuật toán **giả định lạc quan** rằng luôn có Line-of-Sight và gán tạm $parent(s') = parent(s)$ mà không kiểm tra va chạm ngay.
+    - Chỉ đến khi node $s'$ được chọn ra khỏi `open_list` (trở thành node tốt nhất), thuật toán mới thực sự kiểm tra Line-of-Sight một lần duy nhất.
+    - Nếu kiểm tra va chạm phát hiện bị cản, nó mới lùi về chọn lại $parent(s') = s$ (Path 1).
+  - Giảm thiểu số lần kiểm tra va chạm từ 2 đến 5 lần so với Theta* tiêu chuẩn, tăng tốc độ xử lý rõ rệt.
+
+---
+
+### 10. Strict Theta* (S-Theta*)
+* **Mã nguồn:** [`s_theta_star_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/s_theta_star_planner.h) & [`s_theta_star_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/s_theta_star_planner.cpp).
+* **Phát triển từ đâu? Đổi mới gì so với Theta*?**
+  - **Vấn đề của Theta*:** Vì cắt thẳng góc, đường đi Any-Angle của Theta* thường "cắt ngọt" sát sạt các góc vuông của chướng ngại vật (corner cutting), gây nguy cơ va quẹt đuôi hoặc bánh xe robot ngoài thực tế.
+  - **Đổi mới:** S-Theta* siết chặt (strict) điều kiện Line-of-Sight bằng cách kiểm tra thêm biên an toàn xung quanh tia ngắm và hạn chế cắt góc nhọn, đảm bảo đường đi cách vật cản một bán kính an toàn tối thiểu.
+
+---
+
+### 11. Voronoi Planner
+* **Mã nguồn:** [`voronoi_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/voronoi_planner.h) & [`voronoi_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/voronoi_planner.cpp).
+* **Nguyên lý toán học:**
+  - Dựa trên biểu đồ Voronoi suy rộng (**Generalized Voronoi Diagram - GVD**). Mạng lưới Voronoi là tập hợp các điểm trong không gian cách đều ít nhất hai chướng ngại vật gần nhất.
+  - Xây dựng bản đồ khoảng cách vật cản thời gian thực bằng cấu trúc [`DynamicVoronoi`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/dynamicvoronoi.h).
+* **Cách chạy:**
+  1. Giai đoạn 1: Tìm đường từ điểm $Start$ đến điểm gần nhất trên ranh giới Voronoi.
+  2. Giai đoạn 2: Robot di chuyển dọc theo "xương sống" của mạng Voronoi (chạy chính giữa các hành lang).
+  3. Giai đoạn 3: Rời mạng Voronoi để rẽ vào điểm $Goal$.
+* **Phát triển từ đâu? Đổi mới gì so với A*?**
+  - A* tìm đường ngắn nhất nhưng luôn bám sát mép tường. Voronoi Planner từ bỏ mục tiêu đường ngắn nhất để đạt được **độ an toàn tối đa (Maximal Clearance Path)**, đưa xe tự hành chạy vào chính giữa hành lang rộng, tránh xa mọi nguy cơ va chạm.
+
+---
+
+### 12. Hybrid A*
+* **Mã nguồn:** [`hybrid_astar_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/hybrid_astar_planner/hybrid_astar_planner.h) & [`hybrid_astar_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/hybrid_astar_planner/hybrid_astar_planner.cpp).
+* **Công thức & Mô hình động học:**
+  - Không gian trạng thái 3 chiều liên tục: $s = (x, y, \theta)$.
+  - Trạng thái được cập nhật qua mô hình xe đạp (Bicycle Kinematic Model) với vận tốc $v$ và góc bẻ lái $\phi$:
+    $$\dot{x} = v \cos\theta, \quad \dot{y} = v \sin\theta, \quad \dot{\theta} = \frac{v}{L} \tan\phi$$
+  - Hàm Heuristic kết hợp hai mặt đối ngẫu:
+    $$h(s) = \max \Big( h_{\text{non-holonomic-without-obstacles}}(s), \: h_{\text{holonomic-with-obstacles}}(s) \Big)$$
+    + $h_{\text{non-holonomic}}$: Tính bằng đường cong Dubins / Reeds-Shepp (bán kính quay tối thiểu, không xét vật cản).
+    + $h_{\text{holonomic}}$: Tính bằng khoảng cách 2D Dijkstra/A* (xét vật cản, không xét góc lái).
+  - **Analytic Expansion:** Khi đến gần đích, sử dụng đường cong Reeds-Shepp giải tích nối thẳng vào đích trong 1 bước.
+* **Phát triển từ đâu? Đổi mới gì so với A* truyền thống?**
+  - **Vấn đề của A*:** Xem robot như một điểm chất điểm không kích thước, có thể đổi hướng $90^\circ$ tức thời. Xe ô tô thực tế (`nanocar`, xe tự lái) có bán kính quay vòng tối thiểu, không thể xoay tại chỗ.
+  - **Đổi mới của Stanford (DARPA 2008):** Hybrid A* kết hợp tìm kiếm rời rạc trên ô cờ 3D $(x, y, \theta)$ với mô hình chuyển động lái thực tế liên tục. Đường đi tạo ra khả thi 100% về mặt điều khiển học (kinematically feasible), robot có thể chạy mượt mà ngay mà không cần qua bước bẻ cong quỹ đạo.
+
+---
+
+### 13. Lazy Planner
+* **Mã nguồn:** [`lazy_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/graph_planner/lazy_planner.h) & [`lazy_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/graph_planner/lazy_planner.cpp).
+* **Nguyên lý:** Nối thẳng đường chim bay từ $Start$ đến $Goal$, kiểm tra va chạm trên đoạn thẳng; nếu có chướng ngại vật thì chèn thêm điểm tránh né trung gian tối thiểu. Phù hợp cho môi trường cực kỳ thoáng đãng, chi phí tính toán xấp xỉ bằng 0.
+
+---
+
+## 3. NHÓM II: THUẬT TOÁN LẤY MẪU NGẪU NHIÊN (SAMPLE-BASED PLANNERS)
+
+Tất cả các thuật toán thuộc nhóm này xuất bản cấu trúc cây ngẫu nhiên qua topic:
+`GridBased/random_tree` (Kiểu tin nhắn: `visualization_msgs/msg/Marker` - Line List màu xanh lá).
+
+---
+
+### 14. RRT (Rapidly-exploring Random Tree)
+* **Mã nguồn:** [`rrt_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/sample_planner/rrt_planner.h) & [`rrt_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/sample_planner/rrt_planner.cpp).
+* **Thuật toán từng bước:**
+  1. Khởi tạo cây $T$ với gốc là điểm $Start$.
+  2. Ở mỗi chu kỳ, lấy mẫu ngẫu nhiên một điểm $q_{rand}$ trong không gian $\mathcal{C}$ (có xác suất $p$ thiên về $Goal$).
+  3. Tìm đỉnh $q_{near} \in T$ gần $q_{rand}$ nhất:
+     $$q_{near} = \arg\min_{q \in T} \text{dist}(q, q_{rand})$$
+  4. Mở rộng một bước có độ dài $\Delta q$ (tối đa `sample_max_distance`) từ $q_{near}$ về phía $q_{rand}$ để tạo $q_{new}$.
+  5. Nếu đoạn thẳng nối $q_{near}$ và $q_{new}$ không va chạm vật cản, thêm $q_{new}$ vào cây $T$ với cha là $q_{near}$.
+  6. Lặp lại đến khi $q_{new}$ tiến vào vùng lân cận của $Goal$.
+* **Đặc điểm & Hạn chế:**
+  - **Ưu điểm:** Tốc độ khám phá không gian nhanh, không phụ thuộc độ phân giải ô lưới, giải quyết tốt không gian nhiều chiều.
+  - **Hạn chế:** Chỉ đạt tính đầy đủ theo xác suất (Probabilistically Complete) chứ **không tối ưu** (quỹ đạo ngoằn ngoèo, gập ghềnh).
+
+---
+
+### 15. RRT* (Optimal RRT)
+* **Mã nguồn:** [`rrt_star_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/sample_planner/rrt_star_planner.h) & [`rrt_star_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/sample_planner/rrt_star_planner.cpp).
+* **Phát triển từ đâu? Hai đột phá cải tiến so với RRT:**
+  Sertac Karaman & Emilio Frazzoli (MIT - 2011) chứng minh RRT nguyên bản không thể tiệm cận nghiệm tối ưu dù số mẫu tiến tới vô cùng. RRT* bổ sung 2 bước đột phá:
+  1. **Choose Best Parent (Chọn cha tối ưu):**
+     Thay vì mặc định lấy $q_{near}$ làm cha, RRT* quét một hình tròn bán kính $r$ (`optimization_radius`) xung quanh $q_{new}$ và chọn đỉnh $q_{min}$ sao cho tổng chi phí từ $Start$ qua $q_{min}$ tới $q_{new}$ là nhỏ nhất:
+     $$parent(q_{new}) = \arg\min_{q \in X_{near}} \big( \text{cost}(q) + \text{dist}(q, q_{new}) \big)$$
+  2. **Rewire Tree (Nối lại cành cây):**
+     Sau khi thêm $q_{new}$, kiểm tra lại toàn bộ các đỉnh $q_{near}$ trong bán kính $r$. Nếu đi vòng qua $q_{new}$ có chi phí thấp hơn chi phí hiện tại của $q_{near}$:
+     $$\text{Nếu } \text{cost}(q_{new}) + \text{dist}(q_{new}, q_{near}) < \text{cost}(q_{near}) \implies parent(q_{near}) \leftarrow q_{new}$$
+* **Kết quả:** Đạt tính **tối ưu tiệm cận (Asymptotic Optimality)**: chiều dài đường đi sẽ liên tục co ngắn lại và tiến về nghiệm tối ưu khi tiếp tục lấy mẫu.
+
+---
+
+### 16. RRT-Connect
+* **Mã nguồn:** [`rrt_connect_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/sample_planner/rrt_connect_planner.h) & [`rrt_connect_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/sample_planner/rrt_connect_planner.cpp).
+* **Phát triển từ đâu? Cải tiến gì so với RRT?**
+  - **Vấn đề của RRT:** Trong mê cung hoặc môi trường có khe hẹp (narrow passages), việc phát triển 1 cây từ $Start$ như "ném phi tiêu trong bóng tối", xác suất trúng khe hẹp để đến đích rất thấp.
+  - **Đột phá:** Phát triển đồng thời **hai cây tìm kiếm song song**:
+    - Cây $T_a$ mọc từ $Start$.
+    - Cây $T_b$ mọc từ $Goal$.
+  - Ở mỗi vòng lặp:
+    1. Cây $T_a$ phát triển một đỉnh mới $q_{new}$ về hướng điểm ngẫu nhiên.
+    2. Cây $T_b$ ngay lập tức cố gắng mở rộng liên tục nhiều bước (Greedy extend) về thẳng điểm $q_{new}$ đó.
+    3. Nếu hai cây chạm nhau thành công, đường đi được tạo thành lập tức bằng cách ghép nối 2 nửa cây.
+  - **Tốc độ:** Nhanh hơn RRT đơn hướng từ 5 đến 20 lần, vượt qua các khe hẹp cực kỳ hiệu quả.
+
+---
+
+### 17. Informed RRT*
+* **Mã nguồn:** [`informed_rrt_star_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/sample_planner/informed_rrt_star_planner.h) & [`informed_rrt_star_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/sample_planner/informed_rrt_star_planner.cpp).
+* **Công thức toán học:**
+  Sau khi tìm thấy đường đi đầu tiên có chiều dài $c_{best}$, tập hợp tất cả các điểm có khả năng cải thiện đường đi nằm trong hình Elip với 2 tiêu điểm là $Start$ và $Goal$:
+  $$\mathcal{X}_{\hat{f}} = \{ x \in \mathcal{C} \mid \|x - x_{start}\|_2 + \|x - x_{goal}\|_2 \le c_{best} \}$$
+  Phương trình Elip có trục lớn $a = c_{best} / 2$, trục nhỏ $b = \sqrt{c_{best}^2 - c_{min}^2} / 2$ với $c_{min} = \|x_{start} - x_{goal}\|_2$.
+* **Phát triển từ đâu? Cải tiến gì so với RRT*?**
+  - **Vấn đề của RRT*:** Sau khi đã tìm được đường ban đầu, RRT* vẫn tiếp tục lấy mẫu đồng đều trên toàn bộ bản đồ. Việc lấy mẫu ở những vùng xa xôi bên ngoài là hoàn toàn vô nghĩa vì không bao giờ có thể tạo ra đường ngắn hơn.
+  - **Đổi mới của Jonathan Gammell (2014):**
+    - Biến không gian lấy mẫu từ hình chữ nhật toàn bản đồ thành hình siêu elip co hẹp dần theo $c_{best}$.
+    - Thuật toán lấy mẫu trực tiếp trong hình elip này bằng cách ánh xạ từ hình cầu đơn vị (Unit ball sampling).
+    - Càng tối ưu, hình elip càng co nhỏ lại, dồn 100% năng lượng tính toán vào dải hẹp quanh đường đi hiện tại để mài giũa nó về độ dài ngắn nhất với tốc độ hội tụ siêu nhanh.
+
+---
+
+## 4. NHÓM III: THUẬT TOÁN TIẾN HÓA & BẦY ĐÀN (EVOLUTIONARY & SWARM PLANNERS)
+
+Tất cả các thuật toán tiến hóa xuất bản vị trí cá thể/quần thể qua topic:
+`GridBased/particles` (Kiểu tin nhắn: `visualization_msgs/msg/Marker` - Cube List màu xanh).
+
+Trong dự án này, đường đi được tham số hóa thành một chuỗi $N$ điểm điều khiển (**Control Points**) của đường cong **B-Spline** mượt mà ([`BSplineCurve`](file:///home/picasso/ros2_motion_planning/src/core/common/include/common/curve/bspline_curve.h)). Các cá thể tìm kiếm nghiệm tối ưu chính là các bộ tọa độ điểm điều khiển này.
+
+---
+
+### 18. Particle Swarm Optimization (PSO)
+* **Mã nguồn:** [`pso_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/evolutionary_planner/pso_planner.h) & [`pso_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/evolutionary_planner/pso_planner.cpp).
+* **Công thức toán học:**
+  Mỗi hạt $i$ đại diện cho một đường đi (tập hợp các điểm điều khiển $X_i$). Ở mỗi bước lặp $t$, vận tốc $V_i$ và vị trí $X_i$ của hạt được cập nhật:
+  $$V_i^{t+1} = w \cdot V_i^t + c_1 r_1 \big( P_{best, i} - X_i^t \big) + c_2 r_2 \big( G_{best} - X_i^t \big)$$
+  $$X_i^{t+1} = X_i^t + V_i^{t+1}$$
+  Trong đó:
+  - $w$: Hệ số quán tính (inertia weight).
+  - $c_1, c_2$: Trọng số nhận thức cá nhân và xã hội bầy đàn.
+  - $r_1, r_2 \in [0, 1]$: Các biến ngẫu nhiên ngẫu biến.
+  - $P_{best, i}$: Vị trí tốt nhất cá nhân hạt $i$ từng đạt được.
+  - $G_{best}$: Vị trí tốt nhất mà toàn bộ bầy đàn từng tìm ra.
+* **Hàm đánh giá độ thích nghi (Fitness Function):**
+  Tổng hợp độ dài đường B-spline, khoảng cách an toàn với vật cản và độ cong (curvature).
+* **Đặc tính:** Hội tụ rất nhanh, tạo ra quỹ đạo B-spline cong uốn lượn liên tục, xe chạy cực kỳ êm ái.
+
+---
+
+### 19. Genetic Algorithm (GA)
+* **Mã nguồn:** [`ga_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/evolutionary_planner/ga_planner.h) & [`ga_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/evolutionary_planner/ga_planner.cpp).
+* **Nguyên lý sinh học:**
+  1. **Nhiễm sắc thể (Chromosome/Genet):** Một vector chứa tọa độ các điểm điều khiển B-spline nối từ Start đến Goal.
+  2. **Chọn lọc (Selection):** Đánh giá Fitness của từng cá thể, chọn các cá thể có đường đi ngắn và an toàn nhất vào bể sinh sản (Elitism / Roulette Wheel).
+  3. **Lai ghép (Crossover):** Trao đổi một đoạn điểm điều khiển giữa hai cá thể cha mẹ để sinh ra cá thể con kế thừa ưu điểm của cả hai.
+  4. **Đột biến (Mutation):** Với một tỷ lệ nhỏ, ngẫu nhiên dịch chuyển tọa độ của một điểm điều khiển để khám phá các vùng không gian mới, tránh rơi vào cực tiểu cục bộ.
+
+---
+
+### 20. Ant Colony Optimization (ACO)
+* **Mã nguồn:** [`aco_planner.h`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/include/path_planner/evolutionary_planner/aco_planner.h) & [`aco_planner.cpp`](file:///home/picasso/ros2_motion_planning/src/core/path_planner/path_planner/src/evolutionary_planner/aco_planner.cpp).
+* **Công thức toán học:**
+  - Mô phỏng hành vi đàn kiến để lại vết mùi Pheromone $\tau$ trên đường đi tìm mồi:
+  - Xác suất một con kiến chọn di chuyển từ điểm $i$ sang điểm $j$:
+    $$P_{ij} = \frac{[\tau_{ij}]^\alpha \cdot [\eta_{ij}]^\beta}{\sum_{k \in \text{allowed}} [\tau_{ik}]^\alpha \cdot [\eta_{ik}]^\beta}$$
+    Trong đó:
+    - $\tau_{ij}$: Nồng độ pheromone tích lũy trên cạnh $(i, j)$.
+    - $\eta_{ij} = \frac{1}{d_{ij}}$: Độ hấp dẫn heuristic (nghịch đảo khoảng cách).
+    - $\alpha, \beta$: Hệ số điều tiết tầm quan trọng của mùi hương so với khoảng cách đích.
+  - **Bay hơi & Cập nhật mùi:**
+    $$\tau_{ij} \leftarrow (1 - \rho)\tau_{ij} + \Delta \tau_{ij}$$
+    Đường nào ngắn hơn sẽ có nhiều kiến qua lại hơn $\rightarrow$ Pheromone tích lũy nhanh hơn $\rightarrow$ Càng thu hút các con kiến tiếp theo chọn lựa.
+
+---
+
+## 5. BẢNG MA TRẬN SO SÁNH TỔNG HỢP
+
+| Thuật toán | Họ thuật toán | Tính tối ưu (Optimality) | Độ mượt quỹ đạo (Smoothness) | Thời gian tính toán | Ràng buộc góc lái xe (Non-holonomic) | Topic trực quan trên RViz2 |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **Dijkstra** | Graph-based | Tuyệt đối (Ô cờ) | Thấp (Răng cưa) | Rất chậm | Không | `/GridBased/expand` |
+| **GBFS** | Graph-based | Không | Thấp | Rất nhanh | Không | `/GridBased/expand` |
+| **A\*** | Graph-based | Tuyệt đối (Ô cờ) | Thấp (Răng cưa) | Nhanh | Không | `/GridBased/expand` |
+| **JPS** | Graph-based | Tuyệt đối (Ô cờ) | Thấp (Răng cưa) | Cực nhanh | Không | `/GridBased/expand` |
+| **LPA\*** | Incremental | Tuyệt đối (Tái lập) | Thấp | Cực nhanh khi cập nhật | Không | `/GridBased/expand` |
+| **D\*** | Incremental | Tuyệt đối (Tái lập) | Thấp | Nhanh | Không | `/GridBased/expand` |
+| **D\* Lite** | Incremental | Tuyệt đối (Tái lập) | Thấp | Cực nhanh | Không | `/GridBased/expand` |
+| **Theta\*** | Any-Angle | Gần tối ưu (Any-angle) | Cao (Đường thẳng) | Trung bình | Không | `/GridBased/expand` |
+| **Lazy Theta\*** | Any-Angle | Gần tối ưu | Cao (Đường thẳng) | Nhanh | Không | `/GridBased/expand` |
+| **S-Theta\*** | Any-Angle | Khá (Tránh góc) | Cao (An toàn) | Trung bình | Không | `/GridBased/expand` |
+| **Voronoi** | Geometric Graph | Xa vật cản nhất | Trung bình | Nhanh | Không | `/GridBased/expand` |
+| **Hybrid A\*** | Kinematic Graph | Tối ưu động học | Rất cao (Đường lái xe) | Chậm / Trung bình | **Có (Ackermann / Dubins)** | `/GridBased/expand` |
+| **Lazy** | Geometric | Thô | Trung bình | Rất nhanh | Không | `/GridBased/expand` |
+| **RRT** | Sample-based | Kém (Gồ ghề) | Kém | Rất nhanh | Không | `/GridBased/random_tree` |
+| **RRT\*** | Sample-based | Tiệm cận tối ưu | Khá | Trung bình | Không | `/GridBased/random_tree` |
+| **RRT-Connect** | Sample-based | Kém | Kém | Siêu nhanh | Không | `/GridBased/random_tree` |
+| **Informed RRT\***| Sample-based | Tiệm cận tối ưu | Tốt | Nhanh | Không | `/GridBased/random_tree` |
+| **PSO** | Swarm | Gần tối ưu | Cực cao (B-Spline) | Trung bình | Gián tiếp qua B-spline | `/GridBased/particles` |
+| **GA** | Evolutionary | Gần tối ưu | Cực cao (B-Spline) | Chậm | Gián tiếp qua B-spline | `/GridBased/particles` |
+| **ACO** | Swarm | Gần tối ưu | Cực cao (B-Spline) | Chậm | Gián tiếp qua B-spline | `/GridBased/particles` |
+
+---
+
+## 6. HƯỚNG DẪN LỰA CHỌN THUẬT TOÁN THEO ỨNG DỤNG THỰC TẾ
+
+1. **Xe vi sai / Robot hút bụi / Robot nhà kho (TurtleBot3, Linorobot2, AGV):**
+   - Muốn tốc độ tính toán nhanh nhất trên bản đồ tĩnh: Chọn **`jps`** hoặc **`astar`**.
+   - Muốn đường thẳng đẹp, không bị răng cưa ô cờ: Chọn **`lazy_theta_star`** hoặc **`theta_star`**.
+   - Muốn an toàn tối đa trong nhà kho có nhiều máy móc giá kệ: Chọn **`voronoi`**.
+   - Môi trường biến đổi liên tục (có người qua lại đóng mở cửa): Chọn **`dstar_lite`**.
+
+2. **Xe tự hành lái trước kiểu ô tô (Ackermann steering - ví dụ model `nanocar`):**
+   - Bắt buộc phải chọn **`hybrid_astar`** vì thuật toán này tính toán góc bẻ lái $\phi$ và bán kính quay xe tối thiểu, đảm bảo xe không bao giờ bị yêu cầu quay tại chỗ hoặc bẻ ngoặt gấp.
+
+3. **Bản đồ không gian nhiều chiều, mê cung phức tạp hoặc khe hẹp:**
+   - Cần tìm ra đường thoát nhanh nhất: Chọn **`rrt_connect`**.
+   - Cần đường đi ngắn và mượt: Chọn **`informed_rrt`**.
+
+4. **Bài toán yêu cầu đường cong mượt tuyệt đối (Smooth trajectory cho xe chạy êm ái):**
+   - Chọn **`pso`** kết hợp B-Spline curve.
