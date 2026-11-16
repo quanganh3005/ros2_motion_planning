@@ -17,8 +17,7 @@ Tất cả các thuật toán đều kế thừa từ lớp cơ sở [`PathPlann
 
 ## <span id="contents">Contents</span>
 
-- [1. Sơ Đồ Phả Hệ và Lịch Sử Tiến Hóa](#1)
-- [2. Nhóm I: Thuật Toán Tìm Kiếm Đồ Thị Ô Lưới (Graph-based Planners)](#2)
+- [1. Nhóm I: Thuật Toán Tìm Kiếm Đồ Thị Ô Lưới (Graph-based Planners)](#1)
   - [1. Dijkstra](#dijkstra)
   - [2. Greedy Best-First Search (GBFS)](#gbfs)
   - [3. A* (A-Star)](#astar)
@@ -32,64 +31,21 @@ Tất cả các thuật toán đều kế thừa từ lớp cơ sở [`PathPlann
   - [11. Voronoi Planner](#voronoi)
   - [12. Hybrid A*](#hybrid_astar)
   - [13. Lazy Planner](#lazy_planner)
-- [3. Nhóm II: Thuật Toán Lấy Mẫu Ngẫu Nhiên (Sample-based Planners)](#3)
+- [2. Nhóm II: Thuật Toán Lấy Mẫu Ngẫu Nhiên (Sample-based Planners)](#2)
   - [14. RRT (Rapidly-exploring Random Tree)](#rrt)
   - [15. RRT* (Optimal RRT)](#rrt_star)
   - [16. RRT-Connect](#rrt_connect)
   - [17. Informed RRT*](#informed_rrt_star)
-- [4. Nhóm III: Thuật Toán Tiến Hóa & Bầy Đàn (Evolutionary & Swarm Planners)](#4)
+- [3. Nhóm III: Thuật Toán Tiến Hóa & Bầy Đàn (Evolutionary & Swarm Planners)](#3)
   - [18. Particle Swarm Optimization (PSO)](#pso)
   - [19. Genetic Algorithm (GA)](#ga)
   - [20. Ant Colony Optimization (ACO)](#aco)
-- [5. Bảng Ma Trận So Sánh Tổng Hợp 20 Thuật Toán](#5)
-- [6. Cẩm Nang Chọn Thuật Toán Theo Ứng Dụng Thực Tế](#6)
+- [4. Bảng Ma Trận So Sánh Tổng Hợp 20 Thuật Toán](#4)
+- [5. Cẩm Nang Chọn Thuật Toán Theo Ứng Dụng Thực Tế](#5)
 
 ---
 
-## <span id="1">1. Sơ Đồ Phả Hệ và Lịch Sử Tiến Hóa</span>
-
-Các thuật toán lập kế hoạch chuyển động phát triển liên tục theo các nhánh tư tưởng nhằm giải quyết các giới hạn cố hữu của thế hệ đi trước:
-
-```mermaid
-flowchart TD
-    subgraph GraphBased ["Nhóm I: Graph-Based Planners"]
-        Dijkstra["Dijkstra (1959)<br>Duyệt loang toàn bộ f(n)=g(n)"] --> AStar["A* (1968)<br>Thêm Heuristic f(n)=g(n)+h(n)"]
-        Dijkstra --> GBFS["GBFS<br>Chỉ dùng Heuristic f(n)=h(n)"]
-        
-        AStar --> JPS["JPS (2011)<br>Cắt tỉa ô cờ, phóng tầm nhìn (Jump Points)"]
-        AStar --> Voronoi["Voronoi Planner<br>Ghép GVD để tối đa hóa khoảng cách an toàn"]
-        
-        AStar --> LPAStar["LPA* (2002)<br>Tái lập kế hoạch cục bộ (Incremental)"]
-        LPAStar --> DStarLite["D* Lite (2002)<br>Tìm ngược Goal->Start, thích nghi môi trường"]
-        AStar --> DStar["D* (1994)<br>Dynamic A* cổ điển với thẻ RAISE/LOWER"]
-        
-        AStar --> ThetaStar["Theta* (2007)<br>Any-Angle, Line-of-Sight bỏ răng cưa ô lưới"]
-        ThetaStar --> LazyThetaStar["Lazy Theta* (2010)<br>Trì hoãn kiểm tra Line-of-Sight tiết kiệm CPU"]
-        ThetaStar --> SThetaStar["S-Theta*<br>Thêm biên an toàn tránh góc nhọn vật cản"]
-        
-        AStar --> HybridAStar["Hybrid A* (Stanford 2008)<br>Không gian liên tục (x,y,θ) + Bán kính quay xe Ackermann"]
-        AStar --> LazyPlanner["Lazy Planner<br>Nối thẳng thô và tối giản ô lưới"]
-    end
-
-    subgraph SampleBased ["Nhóm II: Sample-Based Planners"]
-        RRT["RRT (1998)<br>Cây ngẫu nhiên bao phủ không gian"] --> RRTConnect["RRT-Connect (2000)<br>2 cây song song từ Start & Goal gặp nhau"]
-        RRT --> RRTStar["RRT* (2011)<br>Tiệm cận tối ưu nhờ Choose Parent & Rewire"]
-        RRTStar --> InformedRRTStar["Informed RRT* (2014)<br>Giới hạn lấy mẫu trong siêu Elip co dần"]
-    end
-
-    subgraph Evolutionary ["Nhóm III: Evolutionary & Swarm Planners"]
-        BSpline["Đường cong B-Spline (Mã hóa điểm điều khiển)"]
-        BSpline --> PSO["PSO (Tối ưu bầy đàn hạt)"]
-        BSpline --> GA["GA (Thuật toán di truyền)"]
-        BSpline --> ACO["ACO (Thuật toán đàn kiến - Pheromone)"]
-    end
-```
-
-[▲ Quay lại Mục Lục](#contents)
-
----
-
-## <span id="2">2. Nhóm I: Thuật Toán Tìm Kiếm Đồ Thị Ô Lưới (Graph-based Planners)</span>
+## <span id="1">1. Nhóm I: Thuật Toán Tìm Kiếm Đồ Thị Ô Lưới (Graph-based Planners)</span>
 
 > [!NOTE]
 > Tất cả các thuật toán đồ thị trong dự án xuất bản vùng ô lưới đã duyệt qua topic:  
@@ -408,7 +364,7 @@ Nối thẳng đường chim bay từ $Start$ đến $Goal$, kiểm tra va chạ
 
 ---
 
-## <span id="3">3. Nhóm II: Thuật Toán Lấy Mẫu Ngẫu Nhiên (Sample-based Planners)</span>
+## <span id="2">2. Nhóm II: Thuật Toán Lấy Mẫu Ngẫu Nhiên (Sample-based Planners)</span>
 
 > [!NOTE]
 > Tất cả thuật toán nhóm này xuất bản cấu trúc cây ngẫu nhiên qua topic:  
@@ -504,7 +460,7 @@ Phương trình Elip có trục lớn $a = c_{best} / 2$ và trục nhỏ $b = \
 
 ---
 
-## <span id="4">4. Nhóm III: Thuật Toán Tiến Hóa & Bầy Đàn (Evolutionary & Swarm Planners)</span>
+## <span id="3">3. Nhóm III: Thuật Toán Tiến Hóa & Bầy Đàn (Evolutionary & Swarm Planners)</span>
 
 > [!NOTE]
 > Tất cả các thuật toán nhóm này xuất bản vị trí cá thể/quần thể qua topic:  
@@ -586,7 +542,7 @@ $$\tau_{ij} \leftarrow (1 - \rho)\tau_{ij} + \Delta \tau_{ij}$$
 
 ---
 
-## <span id="5">5. Bảng Ma Trận So Sánh Tổng Hợp 20 Thuật Toán</span>
+## <span id="4">4. Bảng Ma Trận So Sánh Tổng Hợp 20 Thuật Toán</span>
 
 | Thuật Toán | Nhóm | Tính Tối Ưu | Độ Mượt Quỹ Đạo | Tốc Độ Tính Toán | Ràng Buộc Góc Lái (Non-holonomic) | Topic RViz2 |
 | :--- | :--- | :--- | :--- | :--- | :---: | :--- |
@@ -615,7 +571,7 @@ $$\tau_{ij} \leftarrow (1 - \rho)\tau_{ij} + \Delta \tau_{ij}$$
 
 ---
 
-## <span id="6">6. Cẩm Nang Chọn Thuật Toán Theo Ứng Dụng Thực Tế</span>
+## <span id="5">5. Cẩm Nang Chọn Thuật Toán Theo Ứng Dụng Thực Tế</span>
 
 > [!TIP]
 > Việc lựa chọn thuật toán phù hợp phụ thuộc vào kiểu chuyển động của robot và tính chất của môi trường làm việc:
