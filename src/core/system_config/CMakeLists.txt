@@ -1,81 +1,87 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.8)
 project(system_config)
 
-add_compile_options(-std=c++17)
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic -std=c++17)
+endif()
 
-find_package(Protobuf 3 REQUIRED)
-find_package(catkin REQUIRED COMPONENTS
-  common
-)
+find_package(ament_cmake REQUIRED)
+find_package(glog REQUIRED)
+find_package(common REQUIRED)
+find_package(Protobuf REQUIRED)
 
-catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES      ${PROJECT_NAME}
-  CATKIN_DEPENDS common
-)
-
-add_library(${PROJECT_NAME}
-  src/proto_util.cpp
-  src/system_config.cpp
-)
-
-
-set(PROTO_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/protos)
+set(PROTO_OUTPUT_DIR ${CMAKE_CURRENT_BINARY_DIR}/proto_gen)
 file(MAKE_DIRECTORY ${PROTO_OUTPUT_DIR})
+
+file(GLOB_RECURSE PROTO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/system_config/*.proto")
 
 set(PROTO_SRCS "")
 set(PROTO_HDRS "")
+foreach(proto_file ${PROTO_FILES})
+  file(RELATIVE_PATH rel_proto "${CMAKE_CURRENT_SOURCE_DIR}" "${proto_file}")
+  get_filename_component(rel_dir "${rel_proto}" DIRECTORY)
+  get_filename_component(proto_name "${rel_proto}" NAME_WE)
+  set(src_out "${PROTO_OUTPUT_DIR}/${rel_dir}/${proto_name}.pb.cc")
+  set(hdr_out "${PROTO_OUTPUT_DIR}/${rel_dir}/${proto_name}.pb.h")
+  list(APPEND PROTO_SRCS "${src_out}")
+  list(APPEND PROTO_HDRS "${hdr_out}")
+  add_custom_command(
+    OUTPUT "${src_out}" "${hdr_out}"
+    COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+    ARGS --cpp_out=${PROTO_OUTPUT_DIR} -I${CMAKE_CURRENT_SOURCE_DIR} ${proto_file}
+    DEPENDS ${proto_file}
+    COMMENT "Running C++ protocol buffer compiler on ${rel_proto}"
+    VERBATIM
+  )
+endforeach()
 
-# common related protos
-file(GLOB_RECURSE COMMON_PROTOS "${CMAKE_CURRENT_SOURCE_DIR}/system_config/common_protos/*.proto")
-protobuf_generate(
-  TARGET ${PROJECT_NAME}
-  LANGUAGE cpp
-  OUT_VAR COMMON_PROTO_SRCS
-  PROTOS ${COMMON_PROTOS}
+add_library(${PROJECT_NAME} SHARED
+  src/proto_util.cpp
+  src/system_config.cpp
+  ${PROTO_SRCS}
+  ${PROTO_HDRS}
 )
-list(APPEND PROTO_SRCS ${COMMON_PROTO_SRCS})
 
-# path planner related protos
-file(GLOB_RECURSE PATH_PLANNER_PROTOS "${CMAKE_CURRENT_SOURCE_DIR}/system_config/path_planner_protos/*.proto")
-protobuf_generate(
-  TARGET ${PROJECT_NAME}
-  LANGUAGE cpp
-  OUT_VAR PATH_PLANNER_PROTO_SRCS
-  PROTOS ${PATH_PLANNER_PROTOS}
+target_include_directories(${PROJECT_NAME} PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<BUILD_INTERFACE:${PROTO_OUTPUT_DIR}>
+  $<INSTALL_INTERFACE:include>
 )
-list(APPEND PROTO_SRCS ${PATH_PLANNER_PROTO_SRCS})
 
-# controller related protos
-file(GLOB CONTROLLER_PROTOS "${CMAKE_CURRENT_SOURCE_DIR}/system_config/controller_protos/*.proto")
-protobuf_generate(
-  TARGET ${PROJECT_NAME}
-  LANGUAGE cpp
-  OUT_VAR CONTROLLER_PROTO_SRCS
-  PROTOS ${CONTROLLER_PROTOS}
-)
-list(APPEND PROTO_SRCS ${CONTROLLER_PROTO_SRCS})
-
-# system configure related protos
-file(GLOB SYSTEM_CONFIG_PROTOS "${CMAKE_CURRENT_SOURCE_DIR}/system_config/*.proto")
-protobuf_generate(
-  TARGET ${PROJECT_NAME}
-  LANGUAGE cpp
-  OUT_VAR SYSTEM_CONFIG_PROTO_SRCS
-  PROTOS ${SYSTEM_CONFIG_PROTOS}
-)
-list(APPEND PROTO_SRCS ${SYSTEM_CONFIG_PROTO_SRCS})
-
-
-include_directories(
-  include
-  ${catkin_INCLUDE_DIRS}
+ament_target_dependencies(${PROJECT_NAME}
+  common
 )
 
 target_link_libraries(${PROJECT_NAME}
-  ${PROTOBUF_LIBRARIES}
-  ${catkin_LIBRARIES}
+  ${Protobuf_LIBRARIES}
 )
-target_include_directories(${PROJECT_NAME} PUBLIC
-  ${CMAKE_CURRENT_BINARY_DIR}
+
+install(DIRECTORY include/
+  DESTINATION include
 )
+
+install(DIRECTORY ${PROTO_OUTPUT_DIR}/
+  DESTINATION include
+  FILES_MATCHING PATTERN "*.h"
+)
+
+install(DIRECTORY system_config/
+  DESTINATION share/${PROJECT_NAME}/system_config
+)
+
+install(TARGETS ${PROJECT_NAME}
+  EXPORT export_${PROJECT_NAME}
+  ARCHIVE DESTINATION lib
+  LIBRARY DESTINATION lib
+  RUNTIME DESTINATION bin
+)
+
+ament_export_include_directories(include)
+ament_export_libraries(${PROJECT_NAME})
+ament_export_targets(export_${PROJECT_NAME})
+ament_export_dependencies(
+  common
+  Protobuf
+)
+
+ament_package()

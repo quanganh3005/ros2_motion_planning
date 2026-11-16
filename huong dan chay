@@ -6,7 +6,7 @@
 ### Bước 1: Dọn dẹp tiến trình cũ (nếu có)
 Mở một cửa sổ Terminal và chạy:
 ```bash
-cd ~/ros_motion_planning
+cd ~/ros2_motion_planning
 ./scripts/killpro.sh
 ```
 
@@ -15,10 +15,10 @@ cd ~/ros_motion_planning
 ### Bước 2: Build gói mô phỏng
 Trong Terminal đó, tiến hành build package:
 ```bash
-cd ~/ros_motion_planning
+cd ~/ros2_motion_planning
 ./scripts/build.sh
 ```
-> Khi màn hình hiện `Finished <<< sim_env` và `Build successful!` là đã hoàn tất.
+> Khi màn hình hiện `Finished <<< path_planner`, `Finished <<< sim_env` và `Build successful!` là đã hoàn tất.
 
 ---
 
@@ -28,7 +28,7 @@ Sau khi build xong, bạn source file môi trường:
 source install/setup.bash
 ```
 
-*(Mẹo: Bạn có thể gõ `echo "source ~/ros_motion_planning/install/setup.bash" >> ~/.bashrc` để các terminal mở sau này tự động nhận diện package mà không cần gõ lại lệnh source).*
+*(Mẹo: Bạn có thể gõ `echo "source ~/ros2_motion_planning/install/setup.bash" >> ~/.bashrc` để các terminal mở sau này tự động nhận diện package mà không cần gõ lại lệnh source).*
 
 ---
 
@@ -53,13 +53,15 @@ ros2 launch sim_env sim_env.launch.py world:=warehouse robot:=turtlebot3_waffle
 ```
 *(hoặc lệnh tương đương: `ros2 launch sim_env main.launch.py`)*
 
-*Tùy chọn đổi bản đồ hoặc robot khác nếu muốn:*
+*Tùy chọn đổi bản đồ, robot hoặc thuật toán lập kế hoạch (Global Planner):*
 * Danh sách robot hỗ trợ: `turtlebot3_waffle`, `turtlebot3_burger`, `turtlebot3_waffle_pi`, `nanocar`
 * Danh sách thế giới hỗ trợ: `warehouse`, `turtlebot3_world`, `museum`, `empty`
-* Ví dụ:
+* Danh sách thuật toán Global Planner: `astar`, `dijkstra`, `gbfs`, `jps`, `dstar`, `lpa_star`, `dstar_lite`, `voronoi`, `theta_star`, `lazy_theta_star`, `hybrid_astar`, `rrt`, `rrt_star`, `rrt_connect`, `informed_rrt`, `aco`, `pso`, `ga`
+* Ví dụ khởi chạy trực tiếp với A*:
 ```bash
-ros2 launch sim_env main.launch.py world:=turtlebot3_world robot:=turtlebot3_burger
+ros2 launch sim_env main.launch.py world:=warehouse robot:=turtlebot3_waffle planner:=astar
 ```
+*(Bạn cũng có thể cấu hình trực tiếp thuật toán trong file `src/user_config/user_config.yaml` qua khóa `robot1_global_planner: "gbfs"` hoặc `"astar"`, hoặc đổi ngay khi đang chạy bằng lệnh: `ros2 param set /planner_server GridBased.planner_name astar`).*
 
 ---
 
@@ -88,6 +90,6 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 ### Bước 6: Tắt mô phỏng khi dùng xong
 Khi muốn dừng toàn bộ chương trình, bạn mở một Terminal và chạy:
 ```bash
-cd ~/ros_motion_planning
+cd ~/ros2_motion_planning
 ./scripts/killpro.sh
 ```

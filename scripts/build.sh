@@ -16,8 +16,8 @@ if [ -f "/opt/ros/humble/setup.bash" ]; then
     source /opt/ros/humble/setup.bash
 fi
 
-echo "Running colcon build for sim_env..."
-colcon build --symlink-install --packages-select sim_env
+echo "Running colcon build for motion planning packages..."
+colcon build --symlink-install --packages-select common system_config path_planner sim_env
 
 echo "=========================================="
 echo " Build successful!"

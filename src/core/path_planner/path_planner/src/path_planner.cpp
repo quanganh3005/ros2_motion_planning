@@ -63,6 +63,18 @@ int PathPlanner::getMapSize() const {
 }
 
 /**
+ * @brief Update cached costmap dimensions
+ */
+void PathPlanner::updateCostMap() {
+  if (costmap_ros_) {
+    costmap_ = costmap_ros_->getCostmap();
+    nx_ = static_cast<int>(costmap_->getSizeInCellsX());
+    ny_ = static_cast<int>(costmap_->getSizeInCellsY());
+    map_size_ = nx_ * ny_;
+  }
+}
+
+/**
  * @brief Transform from grid map(x, y) to grid index(i)
  * @param x grid map x
  * @param y grid map y

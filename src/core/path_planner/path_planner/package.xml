@@ -1,30 +1,33 @@
 <?xml version="1.0"?>
-<package format="2">
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>path_planner</name>
-  <version>0.0.0</version>
-  <description>The path_planner package</description>
+  <version>1.0.0</version>
+  <description>The path_planner package for ROS 2 Nav2</description>
+  <maintainer email="doanquanganh54@gmail.com">picasso</maintainer>
+  <license>Apache-2.0</license>
 
-  <maintainer email="913982779@qq.com">winter</maintainer>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <license>GPL3</license>
-
-  <buildtool_depend>catkin</buildtool_depend>
-
-  <depend>angles</depend>
-  <depend>costmap_2d</depend>
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>nav2_core</depend>
+  <depend>nav2_costmap_2d</depend>
+  <depend>nav2_util</depend>
   <depend>geometry_msgs</depend>
-  <depend>nav_core</depend>
   <depend>nav_msgs</depend>
-  <depend>navfn</depend>
+  <depend>visualization_msgs</depend>
   <depend>pluginlib</depend>
-  <depend>roscpp</depend>
+  <depend>tf2</depend>
   <depend>tf2_geometry_msgs</depend>
   <depend>tf2_ros</depend>
-  <depend>voronoi_layer</depend>
+  <depend>angles</depend>
   <depend>common</depend>
   <depend>system_config</depend>
+  <depend>libgoogle-glog-dev</depend>
 
   <export>
-    <nav_core plugin="${prefix}/path_planner_plugin.xml" />
+    <build_type>ament_cmake</build_type>
+    <nav2_core plugin="${prefix}/path_planner_plugin.xml" />
   </export>
 </package>

@@ -2,10 +2,10 @@
  * *********************************************************
  *
  * @file: path_planner_factory.cpp
- * @brief: Create the planner with specifical parameters
+ * @brief: Create the planner with specific parameters
  * @author: Yang Haodong
  * @date: 2025-02-16
- * @version: 1.0
+ * @version: 2.0 (ROS 2 Humble adapted)
  *
  * Copyright (c) 2025, Yang Haodong.
  * All rights reserved.
@@ -44,17 +44,14 @@
 namespace rmp::path_planner {
 /**
  * @brief Create and configure planner
- * @param nh ROS node handler
+ * @param planner_name planner name
  * @param costmap_ros costmap ROS wrapper
  * @param planner_props planner property
  * @return bool true if create successful, else false
  */
-bool PathPlannerFactory::createPlanner(ros::NodeHandle& nh,
+bool PathPlannerFactory::createPlanner(const std::string& planner_name,
                                        costmap_2d::Costmap2DROS* costmap_ros,
                                        PlannerProps& planner_props) {
-  std::string planner_name;
-  nh.param("planner_name", planner_name, (std::string) "astar");  // planner name
-
   if (planner_name == "astar") {
     planner_props.planner_ptr = std::make_shared<AStarPathPlanner>(costmap_ros);
     planner_props.planner_type = GRAPH_PLANNER;
@@ -105,8 +102,9 @@ bool PathPlannerFactory::createPlanner(ros::NodeHandle& nh,
   } else if (planner_name == "rrt_connect") {
     planner_props.planner_ptr = std::make_shared<RRTConnectPathPlanner>(costmap_ros);
     planner_props.planner_type = SAMPLE_PLANNER;
-  } else if (planner_name == "informed_rrt") {
-    planner_props.planner_ptr = std::make_shared<InformedRRTStarPathPlanner>(costmap_ros);
+  } else if (planner_name == "informed_rrt" || planner_name == "informed_rrt_star") {
+    planner_props.planner_ptr =
+        std::make_shared<InformedRRTStarPathPlanner>(costmap_ros);
     planner_props.planner_type = SAMPLE_PLANNER;
   } else if (planner_name == "aco") {
     planner_props.planner_ptr = std::make_shared<ACOPathPlanner>(costmap_ros);
@@ -118,11 +116,9 @@ bool PathPlannerFactory::createPlanner(ros::NodeHandle& nh,
     planner_props.planner_ptr = std::make_shared<GAPathPlanner>(costmap_ros);
     planner_props.planner_type = EVOLUTION_PLANNER;
   } else {
-    R_ERROR << "Unknown planner name: " << planner_name;
     return false;
   }
 
-  R_INFO << "Using path planner: " << planner_name;
   return true;
 }
-}  // namespace rmp
+}  // namespace rmp::path_planner

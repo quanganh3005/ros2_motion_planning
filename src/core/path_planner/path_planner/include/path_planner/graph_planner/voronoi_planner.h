@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "path_planner/path_planner.h"
-#include "voronoi_layer.h"
+#include "path_planner/graph_planner/dynamicvoronoi.h"
 
 namespace rmp::path_planner {
 /**

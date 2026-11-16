@@ -4,46 +4,68 @@ rviz_file: "sim_env_ros2.rviz"
 
 robots_config:
   - robot1_type: "linorobot2"
-    robot1_global_planner: "gbfs"
+    robot1_global_planner: "rrt"
     robot1_local_planner: "lqr"
     robot1_x_pos: "0.0"
     robot1_y_pos: "0.0"
     robot1_z_pos: "0.0"
     robot1_yaw: "0.0"
 
-# * global planner
-#   * graph_planner
-#     * astar
-#     * jps
-#     * gbfs
-#     * dijkstra
-#     * dstar
-#     * lpa_star
-#     * voronoi
-#     * dstar_lite
-#     * theta_star
-#     * lazy_theta_star
-#     * hybrid_astar
+# ==============================================================================
+# DANH MỤC THUẬT TOÁN & TÙY CHỌN CẤU HÌNH (Gợi ý chọn & Marker tương ứng trong RViz2)
+# ==============================================================================
 #
-#   * sample_planner
-#     * rrt
-#     * rrt_star
-#     * rrt_connect
-#     * informed_rrt
+# 1. GLOBAL PLANNER (robot1_global_planner):
+#   * Graph-based Planner (Thuật toán đồ thị ô lưới - Hiển thị qua Marker topic: /GridBased/expand)
+#     * astar             : A* tìm đường cơ bản, tối ưu độ dài đường đi
+#     * dijkstra          : Dijkstra quét loang toàn bộ không gian
+#     * gbfs              : Greedy Best-First Search (rất nhanh, thiên về hướng đích)
+#     * jps               : Jump Point Search (nhảy cóc qua ô trống, tối ưu tốc độ cho A*)
+#     * dstar             : D* (Dynamic A* tái lập kế hoạch khi môi trường thay đổi)
+#     * lpa_star          : Lifelong Planning A* (cập nhật đường đi từng phần)
+#     * dstar_lite        : D* Lite (phiên bản gọn và hiệu quả hơn D*)
+#     * voronoi           : Voronoi Planner (đi giữa hành lang, giữ khoảng cách xa vật cản nhất)
+#     * theta_star        : Theta* (Any-Angle path, không bị gò bó theo 8 hướng ô lưới)
+#     * lazy_theta_star   : Lazy Theta* (trì hoãn kiểm tra va chạm, tính toán nhanh hơn Theta*)
+#     * s_theta_star      : Strict Theta* (Theta* tăng cường kiểm tra độ an toàn)
+#     * hybrid_astar      : Hybrid A* (tính đến bán kính quay đầu và góc lái xe 4 bánh Ackermann)
+#     * lazy              : Lazy Planner (đơn giản hóa đường đi)
 #
-#   * evolutionary_planner
-#     * aco
-#     * pso
-#     * ga
-#   * lazy_planner
+#   * Sample-based Planner (Lấy mẫu ngẫu nhiên - Hiển thị qua Marker topic: /GridBased/random_tree)
+#     * rrt               : Rapidly-exploring Random Tree (phát triển cây ngẫu nhiên từ Start -> Goal)
+#     * rrt_star          : RRT* (tối ưu hóa độ dài cây tìm kiếm bằng thuật toán nối lại nhánh - rewire)
+#     * rrt_connect       : RRT-Connect (phát triển đồng thời 2 cây từ Start và Goal gặp nhau ở giữa)
+#     * informed_rrt      : Informed RRT* (sau khi tìm thấy đường, giới hạn vùng lấy mẫu trong hình Elip)
+#     * informed_rrt_star : Informed RRT* (tương tự informed_rrt)
 #
-# * local planner
-#   * dwa
-#   * pid
-#   * apf
-#   * rpp
-#   * lqr
-#   * static
+#   * Evolutionary Planner (Tiến hóa & Bầy đàn - Hiển thị qua Marker topic: /GridBased/particles)
+#     * pso               : Particle Swarm Optimization (tối ưu hóa bầy đàn hạt)
+#     * ga                : Genetic Algorithm (thuật toán di truyền: lai ghép, đột biến)
+#     * aco               : Ant Colony Optimization (thuật toán đàn kiến để lại vết pheromone)
+#
+# 2. LOCAL PLANNER / CONTROLLER (robot1_local_planner):
+#   * dwa                 : Dynamic Window Approach / DWB (Hiển thị qua topic: /marker [Trajectories])
+#   * rpp                 : Regulated Pure Pursuit (bám đuổi đường cong, Marker: /target_point)
+#   * lqr                 : Linear Quadratic Regulator (điều khiển tối ưu sai số, Marker: /target_point)
+#   * mpc                 : Model Predictive Control (dự đoán mô hình, Marker: /target_point)
+#   * pid                 : PID Controller (điều khiển tỷ lệ vi tích phân, Marker: /target_point)
+#   * apf                 : Artificial Potential Field (trường thế lực hấp dẫn - đẩy, Marker: /target_point)
+#   * static              : Static Controller (điều khiển dừng cố định)
+#
+# 3. ROBOT TYPE (robot1_type):
+#   * turtlebot3_waffle   : Robot vi sai (Differential Drive) kích thước chuẩn, LiDAR + Realsense
+#   * turtlebot3_burger   : Robot vi sai nhỏ gọn hình tròn
+#   * turtlebot3_waffle_pi: Robot vi sai trang bị camera Raspberry Pi
+#   * nanocar             : Xe 4 bánh lái trước (Ackermann Steering, phù hợp chạy Hybrid A*)
+#   * linorobot2          : Robot đa hướng/vi sai
+#
+# 4. MAP & WORLD:
+#   * office              : Bản đồ văn phòng nhiều phòng nhỏ và hành lang hẹp
+#   * warehouse           : Bản đồ kho hàng rộng lớn có kệ hàng và pallet
+#   * museum              : Bản đồ bảo tàng không gian triển lãm nghệ thuật
+#   * turtlebot3_world    : Bản đồ tiêu chuẩn hình lục giác của TurtleBot3
+#   * empty               : Không gian trống không có vật cản
+# ==============================================================================
 
 plugins:
   # pedestrians: "pedestrian_config.yaml"

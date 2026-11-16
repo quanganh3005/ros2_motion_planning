@@ -19,6 +19,7 @@ def generate_launch_description():
     default_world = 'warehouse'
     default_map = 'warehouse'
     default_robot = 'turtlebot3_waffle'
+    default_planner = 'astar'
     default_x = '0.0'
     default_y = '0.0'
     default_z = '0.01'
@@ -26,6 +27,7 @@ def generate_launch_description():
 
     try:
         possible_cfg_paths = [
+            os.path.expanduser('~/ros2_motion_planning/src/user_config/user_config.yaml'),
             os.path.expanduser('~/ros_motion_planning/src/user_config/user_config.yaml'),
             os.path.join(os.getcwd(), 'src/user_config/user_config.yaml'),
             os.path.join(os.getcwd(), '../src/user_config/user_config.yaml'),
@@ -41,6 +43,7 @@ def generate_launch_description():
                         if robots and len(robots) > 0:
                             r0 = robots[0]
                             default_robot = str(r0.get('robot1_type', default_robot))
+                            default_planner = str(r0.get('robot1_global_planner', default_planner))
                             default_x = str(r0.get('robot1_x_pos', default_x))
                             default_y = str(r0.get('robot1_y_pos', default_y))
                             default_z = str(r0.get('robot1_z_pos', default_z))
@@ -53,6 +56,7 @@ def generate_launch_description():
     world = LaunchConfiguration('world')
     map_name = LaunchConfiguration('map_name')
     robot = LaunchConfiguration('robot')
+    planner = LaunchConfiguration('planner')
     x_pos = LaunchConfiguration('x_pos')
     y_pos = LaunchConfiguration('y_pos')
     z_pos = LaunchConfiguration('z_pos')
@@ -80,6 +84,12 @@ def generate_launch_description():
         description='Robot model name (turtlebot3_waffle, turtlebot3_burger, etc.)',
     )
 
+    declare_planner_cmd = DeclareLaunchArgument(
+        'planner',
+        default_value=default_planner,
+        description='Global planner algorithm (astar, dijkstra, jps, rrt_star, hybrid_astar, etc.)',
+    )
+
     declare_x_cmd = DeclareLaunchArgument(
         'x_pos',
         default_value=default_x,
@@ -101,7 +111,7 @@ def generate_launch_description():
     declare_yaw_cmd = DeclareLaunchArgument(
         'yaw',
         default_value=default_yaw,
-        description='Initial Yaw orientation of robot',
+        description='Initial Yaw orientation of robot in radians',
     )
 
     declare_use_nav2_cmd = DeclareLaunchArgument(
@@ -113,7 +123,7 @@ def generate_launch_description():
     declare_sim_time_cmd = DeclareLaunchArgument(
         'use_sim_time',
         default_value='true',
-        description='Use simulation clock',
+        description='Use simulation (Gazebo) clock if true',
     )
 
     declare_rviz_cmd = DeclareLaunchArgument(
@@ -148,12 +158,25 @@ def generate_launch_description():
         [map_name, TextSubstitution(text='.yaml')],
     ])
 
+    orig_params_path = os.path.join(pkg_sim_env, 'config', 'nav2_params.yaml')
+    configured_params_path = os.path.join(pkg_sim_env, 'config', 'nav2_params_active.yaml')
+    try:
+        with open(orig_params_path, 'r') as pf:
+            cfg = yaml.safe_load(pf)
+        if 'planner_server' in cfg and 'ros__parameters' in cfg['planner_server']:
+            cfg['planner_server']['ros__parameters']['GridBased']['planner_name'] = default_planner
+        with open(configured_params_path, 'w') as pf:
+            yaml.dump(cfg, pf)
+    except Exception:
+        configured_params_path = orig_params_path
+
     nav2_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_sim_env, 'launch', 'nav2.launch.py')
         ),
         launch_arguments={
             'map': map_yaml_path,
+            'params_file': configured_params_path,
             'use_sim_time': use_sim_time,
             'autostart': 'true',
         }.items(),
@@ -164,6 +187,7 @@ def generate_launch_description():
     ld.add_action(declare_world_cmd)
     ld.add_action(declare_map_cmd)
     ld.add_action(declare_robot_cmd)
+    ld.add_action(declare_planner_cmd)
     ld.add_action(declare_x_cmd)
     ld.add_action(declare_y_cmd)
     ld.add_action(declare_z_cmd)

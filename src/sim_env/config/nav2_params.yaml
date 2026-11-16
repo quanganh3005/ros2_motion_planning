@@ -71,6 +71,7 @@ controller_server:
     failure_tolerance: 0.3
     progress_checker_plugin: "progress_checker"
     goal_checker_plugins: ["general_goal_checker"]
+    current_goal_checker: "general_goal_checker"
     controller_plugins: ["FollowPath"]
 
     progress_checker:
@@ -202,7 +203,8 @@ planner_server:
     use_sim_time: True
     planner_plugins: ["GridBased"]
     GridBased:
-      plugin: "nav2_navfn_planner/NavfnPlanner"
+      plugin: "rmp_nav2_planner/PathPlanner"
+      planner_name: "astar"
       tolerance: 0.5
       use_astar: false
       allow_unknown: true

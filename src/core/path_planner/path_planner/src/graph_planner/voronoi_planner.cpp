@@ -191,21 +191,16 @@ bool VoronoiPathPlanner::searchPathWithVoronoi(const Node& start, const Node& go
  * @brief update voronoi object using costmap ROS wrapper
  */
 void VoronoiPathPlanner::_updateVoronoi() {
-  bool voronoi_layer_exist = false;
-  for (auto layer = costmap_ros_->getLayeredCostmap()->getPlugins()->begin();
-       layer != costmap_ros_->getLayeredCostmap()->getPlugins()->end(); ++layer) {
-    boost::shared_ptr<costmap_2d::VoronoiLayer> voronoi_layer =
-        boost::dynamic_pointer_cast<costmap_2d::VoronoiLayer>(*layer);
-    if (voronoi_layer) {
-      voronoi_layer_exist = true;
-      boost::unique_lock<boost::mutex> lock(voronoi_layer->getMutex());
-      voronoi_ = voronoi_layer->getVoronoi();
-      break;
+  voronoi_.initializeEmpty(nx_, ny_);
+  for (int x = 0; x < nx_; ++x) {
+    for (int y = 0; y < ny_; ++y) {
+      if (costmap_->getCost(x, y) >= costmap_2d::LETHAL_OBSTACLE) {
+        voronoi_.occupyCell(x, y);
+      }
     }
   }
-  if (!voronoi_layer_exist) {
-    ROS_ERROR("Failed to get a Voronoi layer for potentional application.");
-  }
+  voronoi_.update();
+  voronoi_.prune();
 }
 
 }  // namespace rmp

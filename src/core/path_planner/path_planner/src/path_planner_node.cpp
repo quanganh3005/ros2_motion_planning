@@ -2,10 +2,10 @@
  * *********************************************************
  *
  * @file: path_planner_node.cpp
- * @brief: Contains the path planner ROS wrapper class
+ * @brief: Contains the path planner Nav2 GlobalPlanner plugin
  * @author: Yang Haodong
  * @date: 2024-9-24
- * @version: 2.0
+ * @version: 2.0 (ROS 2 Humble adapted)
  *
  * Copyright (c) 2024, Yang Haodong.
  * All rights reserved.
@@ -15,183 +15,198 @@
  * ********************************************************
  */
 #include <tf2/utils.h>
-#include <pluginlib/class_list_macros.h>
+#include <pluginlib/class_list_macros.hpp>
+#include <nav2_util/node_utils.hpp>
 
-// path planner
 #include "path_planner/path_planner_node.h"
-
 #include "common/util/log.h"
 #include "common/util/visualizer.h"
 
-PLUGINLIB_EXPORT_CLASS(rmp::path_planner::PathPlannerNode, nav_core::BaseGlobalPlanner)
+PLUGINLIB_EXPORT_CLASS(rmp::path_planner::PathPlannerNode, nav2_core::GlobalPlanner)
 
-namespace rmp {
-namespace path_planner {
+namespace rmp::path_planner {
 using Visualizer = rmp::common::util::Visualizer;
 
-/**
- * @brief Construct a new Graph Planner object
- */
-PathPlannerNode::PathPlannerNode() : initialized_(false), g_planner_(nullptr) {
-}
+PathPlannerNode::PathPlannerNode() : initialized_(false), g_planner_(nullptr) {}
 
-/**
- * @brief Construct a new Graph Planner object
- * @param name        planner name
- * @param costmap_ros the cost map to use for assigning costs to trajectories
- */
-PathPlannerNode::PathPlannerNode(std::string name, costmap_2d::Costmap2DROS* costmap_ros)
-  : PathPlannerNode() {
-  initialize(name, costmap_ros);
-}
+void PathPlannerNode::configure(
+  const rclcpp_lifecycle::LifecycleNode::WeakPtr & parent,
+  std::string name,
+  std::shared_ptr<tf2_ros::Buffer> tf,
+  std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros)
+{
+  auto node = parent.lock();
+  if (!node) {
+    throw std::runtime_error("Unable to lock parent node in PathPlannerNode::configure");
+  }
 
-/**
- * @brief Planner initialization
- * @param name       planner name
- * @param costmapRos costmap ROS wrapper
- */
-void PathPlannerNode::initialize(std::string name, costmap_2d::Costmap2DROS* costmapRos) {
-  costmap_ros_ = costmapRos;
-  initialize(name);
-}
+  node_ = parent;
+  name_ = name;
+  tf_ = tf;
+  costmap_ros_ = costmap_ros;
+  clock_ = node->get_clock();
+  logger_ = node->get_logger();
+  frame_id_ = costmap_ros_->getGlobalFrameID();
 
-/**
- * @brief Planner initialization
- * @param name     planner name
- * @param costmap  costmap pointer
- * @param frame_id costmap frame ID
- */
-void PathPlannerNode::initialize(std::string name) {
-  if (!initialized_) {
-    initialized_ = true;
+  nav2_util::declare_parameter_if_not_declared(
+    node, name_ + ".planner_name", rclcpp::ParameterValue("astar"));
+  node->get_parameter(name_ + ".planner_name", planner_name_);
 
-    // initialize ROS node
-    ros::NodeHandle private_nh("~/" + name);
+  RCLCPP_INFO(logger_, "Configuring PathPlannerNode [%s] with algorithm: %s",
+              name_.c_str(), planner_name_.c_str());
 
-    // costmap frame ID
-    frame_id_ = costmap_ros_->getGlobalFrameID();
-
+  int nx = static_cast<int>(costmap_ros_->getCostmap()->getSizeInCellsX());
+  int ny = static_cast<int>(costmap_ros_->getCostmap()->getSizeInCellsY());
+  if (nx > 10 && ny > 10) {
     PathPlannerFactory::PlannerProps path_planner_props;
-    if (!PathPlannerFactory::createPlanner(private_nh, costmap_ros_,
-                                           path_planner_props)) {
-      R_ERROR << "Create path planner failed.";
+    if (PathPlannerFactory::createPlanner(planner_name_, costmap_ros_.get(), path_planner_props)) {
+      g_planner_ = path_planner_props.planner_ptr;
+      planner_type_ = path_planner_props.planner_type;
     }
+  } else {
+    RCLCPP_INFO(logger_, "Costmap not yet loaded (size: %d x %d). Planner [%s] will be initialized upon first plan request.",
+                nx, ny, planner_name_.c_str());
+  }
 
+  plan_pub_ = node->create_publisher<nav_msgs::msg::Path>(name_ + "/plan", 1);
+  expand_pub_ = node->create_publisher<nav_msgs::msg::OccupancyGrid>(name_ + "/expand", 1);
+  points_pub_ = node->create_publisher<visualization_msgs::msg::Marker>(name_ + "/key_points", 1);
+  lines_pub_ = node->create_publisher<visualization_msgs::msg::Marker>(name_ + "/safety_corridor", 1);
+  tree_pub_ = node->create_publisher<visualization_msgs::msg::Marker>(name_ + "/random_tree", 1);
+  particles_pub_ = node->create_publisher<visualization_msgs::msg::Marker>(name_ + "/particles", 1);
+
+  initialized_ = true;
+}
+
+void PathPlannerNode::cleanup() {
+  RCLCPP_INFO(logger_, "Cleaning up PathPlannerNode [%s]", name_.c_str());
+  plan_pub_.reset();
+  expand_pub_.reset();
+  points_pub_.reset();
+  lines_pub_.reset();
+  tree_pub_.reset();
+  particles_pub_.reset();
+  g_planner_.reset();
+  initialized_ = false;
+}
+
+void PathPlannerNode::activate() {
+  RCLCPP_INFO(logger_, "Activating PathPlannerNode [%s]", name_.c_str());
+  if (plan_pub_) plan_pub_->on_activate();
+  if (expand_pub_) expand_pub_->on_activate();
+  if (points_pub_) points_pub_->on_activate();
+  if (lines_pub_) lines_pub_->on_activate();
+  if (tree_pub_) tree_pub_->on_activate();
+  if (particles_pub_) particles_pub_->on_activate();
+}
+
+void PathPlannerNode::deactivate() {
+  RCLCPP_INFO(logger_, "Deactivating PathPlannerNode [%s]", name_.c_str());
+  if (plan_pub_) plan_pub_->on_deactivate();
+  if (expand_pub_) expand_pub_->on_deactivate();
+  if (points_pub_) points_pub_->on_deactivate();
+  if (lines_pub_) lines_pub_->on_deactivate();
+  if (tree_pub_) tree_pub_->on_deactivate();
+  if (particles_pub_) particles_pub_->on_deactivate();
+}
+
+nav_msgs::msg::Path PathPlannerNode::createPlan(
+  const geometry_msgs::msg::PoseStamped & start,
+  const geometry_msgs::msg::PoseStamped & goal)
+{
+  nav_msgs::msg::Path global_path;
+  global_path.header.stamp = clock_->now();
+  global_path.header.frame_id = frame_id_;
+
+  if (!initialized_) {
+    RCLCPP_ERROR(logger_, "PathPlannerNode has not been initialized yet!");
+    return global_path;
+  }
+
+  auto costmap = costmap_ros_->getCostmap();
+  if (!costmap) {
+    RCLCPP_ERROR(logger_, "Costmap pointer is null!");
+    return global_path;
+  }
+
+  // Mutex lock on costmap
+  std::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(*(costmap->getMutex()));
+
+  int current_nx = static_cast<int>(costmap->getSizeInCellsX());
+  int current_ny = static_cast<int>(costmap->getSizeInCellsY());
+
+  if (current_nx <= 0 || current_ny <= 0) {
+    RCLCPP_WARN(logger_, "Global costmap has invalid dimensions (%d x %d). Waiting for map...", current_nx, current_ny);
+    return global_path;
+  }
+
+  std::string configured_planner_name = planner_name_;
+  if (auto node = node_.lock()) {
+    node->get_parameter(name_ + ".planner_name", configured_planner_name);
+  }
+
+  if (!g_planner_ ||
+      g_planner_->getNx() != current_nx ||
+      g_planner_->getNy() != current_ny ||
+      configured_planner_name != planner_name_) {
+    planner_name_ = configured_planner_name;
+    RCLCPP_INFO(logger_, "Initializing planner [%s] for active costmap: %d x %d (origin: %.2f, %.2f, res: %.3f)",
+                planner_name_.c_str(), current_nx, current_ny,
+                costmap->getOriginX(), costmap->getOriginY(), costmap->getResolution());
+    PathPlannerFactory::PlannerProps path_planner_props;
+    if (!PathPlannerFactory::createPlanner(planner_name_, costmap_ros_.get(), path_planner_props)) {
+      RCLCPP_ERROR(logger_, "Create path planner failed: %s", planner_name_.c_str());
+      return global_path;
+    }
     g_planner_ = path_planner_props.planner_ptr;
     planner_type_ = path_planner_props.planner_type;
-
-    // register planning publisher
-    plan_pub_ = private_nh.advertise<nav_msgs::Path>("plan", 1);
-    points_pub_ = private_nh.advertise<visualization_msgs::Marker>("key_points", 1);
-    lines_pub_ = private_nh.advertise<visualization_msgs::Marker>("safety_corridor", 1);
-    tree_pub_ = private_nh.advertise<visualization_msgs::Marker>("random_tree", 1);
-    particles_pub_ = private_nh.advertise<visualization_msgs::Marker>("particles", 1);
-
-    // register explorer visualization publisher
-    expand_pub_ = private_nh.advertise<nav_msgs::OccupancyGrid>("expand", 1);
-
-    // register planning service
-    make_plan_srv_ =
-        private_nh.advertiseService("make_plan", &PathPlannerNode::makePlanService, this);
-  } else {
-    ROS_WARN(
-        "This planner has already been initialized, you can't call it twice, doing "
-        "nothing");
   }
-}
 
-/**
- * @brief plan a path given start and goal in world map
- * @param start start in world map
- * @param goal  goal in world map
- * @param plan  plan
- * @return true if find a path successfully, else false
- */
-bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start,
-                               const geometry_msgs::PoseStamped& goal,
-                               std::vector<geometry_msgs::PoseStamped>& plan) {
-  return makePlan(start, goal, g_planner_->config().default_tolerance(), plan);
-}
-
-/**
- * @brief Plan a path given start and goal in world map
- * @param start     start in world map
- * @param goal      goal in world map
- * @param plan      plan
- * @param tolerance error tolerance
- * @return true if find a path successfully, else false
- */
-bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start,
-                               const geometry_msgs::PoseStamped& goal, double tolerance,
-                               std::vector<geometry_msgs::PoseStamped>& plan) {
-  // start thread mutex
-  std::unique_lock<costmap_2d::Costmap2D::mutex_t> lock(
-      *g_planner_->getCostMap()->getMutex());
-  if (!initialized_) {
-    R_ERROR << "This planner has not been initialized yet, but it is being used, please "
-               "call initialize() before use";
-    return false;
-  }
-  // clear existing plan
-  plan.clear();
-
-  // judege whether goal and start node in costmap frame or not
+  // Judge whether goal and start node in costmap frame or not
   if (goal.header.frame_id != frame_id_) {
-    R_ERROR << "The goal pose passed to this planner must be in the " << frame_id_
-            << " frame. It is instead in the " << goal.header.frame_id << " frame.";
-    return false;
+    RCLCPP_ERROR(logger_, "The goal pose frame_id (%s) must match global frame_id (%s)",
+                 goal.header.frame_id.c_str(), frame_id_.c_str());
+    return global_path;
   }
 
   if (start.header.frame_id != frame_id_) {
-    R_ERROR << "The start pose passed to this planner must be in the " << frame_id_
-            << " frame. It is instead in the " << start.header.frame_id << " frame.";
-    return false;
+    RCLCPP_ERROR(logger_, "The start pose frame_id (%s) must match global frame_id (%s)",
+                 start.header.frame_id.c_str(), frame_id_.c_str());
+    return global_path;
   }
 
-  // visualization
   const auto& visualizer = rmp::common::util::VisualizerPtr::Instance();
 
-  // outline the map
   if (g_planner_->config().is_outline_map()) {
     g_planner_->outlineMap();
   }
 
-  // calculate path
   common::geometry::Points3d origin_plan;
   common::geometry::Points3d expand;
   bool path_found = false;
 
-  // planning
-  // auto start_time = std::chrono::high_resolution_clock::now();
   path_found = g_planner_->plan(
-      { start.pose.position.x, start.pose.position.y,
-        tf2::getYaw(start.pose.orientation) },
-      { goal.pose.position.x, goal.pose.position.y, tf2::getYaw(goal.pose.orientation) },
-      &origin_plan, &expand);
-  // auto finish_time = std::chrono::high_resolution_clock::now();
-  // std::chrono::duration<double> cal_time = finish_time - start_time;
-  // R_INFO << "Calculation Time: " << cal_time.count() << " s";
+    { start.pose.position.x, start.pose.position.y, tf2::getYaw(start.pose.orientation) },
+    { goal.pose.position.x, goal.pose.position.y, tf2::getYaw(goal.pose.orientation) },
+    &origin_plan, &expand);
 
-  // convert path to ros plan
   if (path_found) {
-    if (_getPlanFromPath(origin_plan, plan)) {
-      geometry_msgs::PoseStamped goalCopy = goal;
-      goalCopy.header.stamp = ros::Time::now();
-      plan.pop_back();
-      plan.push_back(goalCopy);
-      plan[0].pose.orientation = start.pose.orientation;
+    if (_getPlanFromPath(origin_plan, global_path)) {
+      if (!global_path.poses.empty()) {
+        global_path.poses.back().pose = goal.pose;
+        global_path.poses.back().header = global_path.header;
+        global_path.poses.front().pose.orientation = start.pose.orientation;
+        global_path.poses.front().header = global_path.header;
+      }
 
-      // publish visulization plan
+      // Visualization
       if (g_planner_->config().expand_zone()) {
-        if (planner_type_ == GRAPH_PLANNER) {
-          // publish expand zone
+        if (planner_type_ == GRAPH_PLANNER && expand_pub_) {
           visualizer->publishExpandZone(expand, costmap_ros_->getCostmap(), expand_pub_,
-                                        frame_id_);
-        } else if (planner_type_ == SAMPLE_PLANNER) {
-          // publish expand tree
+                                        frame_id_, clock_->now());
+        } else if (planner_type_ == SAMPLE_PLANNER && tree_pub_) {
           Visualizer::Lines2d tree_lines;
           for (const auto& node : expand) {
-            // using theta to record parent id element
             if (node.theta() != 0) {
               int px_i, py_i;
               double px_d, py_d, x_d, y_d;
@@ -199,14 +214,13 @@ bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start,
               g_planner_->map2World(px_i, py_i, px_d, py_d);
               g_planner_->map2World(node.x(), node.y(), x_d, y_d);
               tree_lines.emplace_back(
-                  std::make_pair<common::geometry::Point2d, common::geometry::Point2d>(
-                      { x_d, y_d }, { px_d, py_d }));
+                std::make_pair<common::geometry::Point2d, common::geometry::Point2d>(
+                  { x_d, y_d }, { px_d, py_d }));
             }
           }
           visualizer->publishLines2d(tree_lines, tree_pub_, frame_id_, "tree",
-                                     Visualizer::DARK_GREEN, 0.05);
-        } else if (planner_type_ == EVOLUTION_PLANNER) {
-          // publish expand particles
+                                     clock_->now(), Visualizer::DARK_GREEN, 0.05);
+        } else if (planner_type_ == EVOLUTION_PLANNER && particles_pub_) {
           common::geometry::Points2d markers;
           for (const auto& node : expand) {
             double wx, wy;
@@ -214,71 +228,58 @@ bool PathPlannerNode::makePlan(const geometry_msgs::PoseStamped& start,
             markers.emplace_back(wx, wy);
           }
           visualizer->publishPoints(markers, particles_pub_, frame_id_, "particles",
-                                    Visualizer::DARK_GREEN, 0.1, Visualizer::CUBE);
-        } else {
-          R_WARN << "Unknown planner type.";
+                                    clock_->now(), Visualizer::DARK_GREEN, 0.1, Visualizer::CUBE);
         }
       }
 
-      visualizer->publishPlan(origin_plan, plan_pub_, frame_id_);
+      if (plan_pub_) {
+        visualizer->publishPlan(origin_plan, plan_pub_, frame_id_, clock_->now());
+      }
     } else {
-      R_ERROR << "Failed to get a plan from path when a legal path was found. This "
-                 "shouldn't happen.";
+      RCLCPP_ERROR(logger_, "Failed to get plan from path.");
     }
   } else {
-    R_ERROR << "Failed to get a path.";
+    RCLCPP_WARN(logger_, "PathPlanner [%s]: Failed to find a valid path.", planner_name_.c_str());
   }
-  return !plan.empty();
+
+  return global_path;
 }
 
-/**
- * @brief Regeister planning service
- * @param req  request from client
- * @param resp response from server
- * @return true
- */
-bool PathPlannerNode::makePlanService(nav_msgs::GetPlan::Request& req,
-                                      nav_msgs::GetPlan::Response& resp) {
-  makePlan(req.start, req.goal, resp.plan.poses);
-  resp.plan.header.stamp = ros::Time::now();
-  resp.plan.header.frame_id = frame_id_;
-
-  return true;
-}
-
-/**
- * @brief Calculate plan from planning path
- * @param path path generated by global planner
- * @param plan plan transfromed from path, i.e. [start, ..., goal]
- * @return bool true if successful, else false
- */
 bool PathPlannerNode::_getPlanFromPath(const common::geometry::Points3d& path,
-                                       std::vector<geometry_msgs::PoseStamped>& plan) {
-  if (!initialized_) {
-    R_ERROR << "This planner has not been initialized yet, but it is being used, please "
-               "call initialize() before use";
-    return false;
-  }
-  plan.clear();
+                                       nav_msgs::msg::Path& global_path) {
+  global_path.poses.clear();
+  global_path.header.stamp = clock_->now();
+  global_path.header.frame_id = frame_id_;
 
-  for (const auto& pt : path) {
-    // coding as message type
-    geometry_msgs::PoseStamped pose;
-    pose.header.stamp = ros::Time::now();
+  for (size_t i = 0; i < path.size(); ++i) {
+    geometry_msgs::msg::PoseStamped pose;
+    pose.header.stamp = global_path.header.stamp;
     pose.header.frame_id = frame_id_;
-    pose.pose.position.x = pt.x();
-    pose.pose.position.y = pt.y();
+    pose.pose.position.x = path[i].x();
+    pose.pose.position.y = path[i].y();
     pose.pose.position.z = 0.0;
+
+    double yaw = path[i].theta();
+    if (yaw == 0.0 && i + 1 < path.size()) {
+      double dx = path[i + 1].x() - path[i].x();
+      double dy = path[i + 1].y() - path[i].y();
+      yaw = std::atan2(dy, dx);
+    } else if (yaw == 0.0 && i > 0) {
+      double dx = path[i].x() - path[i - 1].x();
+      double dy = path[i].y() - path[i - 1].y();
+      yaw = std::atan2(dy, dx);
+    }
+
     tf2::Quaternion q;
-    q.setRPY(0, 0, pt.theta());
+    q.setRPY(0.0, 0.0, yaw);
     pose.pose.orientation.x = q.getX();
     pose.pose.orientation.y = q.getY();
     pose.pose.orientation.z = q.getZ();
     pose.pose.orientation.w = q.getW();
-    plan.push_back(pose);
+    global_path.poses.push_back(pose);
   }
 
-  return !plan.empty();
+  return !global_path.poses.empty();
 }
-}  // namespace path_planner
-}  // namespace rmp
+
+}  // namespace rmp::path_planner

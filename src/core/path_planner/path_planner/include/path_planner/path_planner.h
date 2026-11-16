@@ -19,7 +19,7 @@
 
 #include <unordered_map>
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <costmap_2d/costmap_2d.h>
 #include <costmap_2d/costmap_2d_ros.h>
 
@@ -76,6 +76,17 @@ public:
    * @return map_size the size of costmap
    */
   int getMapSize() const;
+
+  /**
+   * @brief get the cell dimensions of costmap
+   */
+  int getNx() const { return nx_; }
+  int getNy() const { return ny_; }
+
+  /**
+   * @brief Update cached costmap dimensions
+   */
+  virtual void updateCostMap();
 
   /**
    * @brief Transform from grid map(x, y) to grid index(i)
