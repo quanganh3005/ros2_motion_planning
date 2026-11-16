@@ -7,37 +7,63 @@ Tất cả thuật toán đều kế thừa từ lớp cơ sở [`PathPlanner`](
 
 ---
 
-## Mục Lục
+<a id="muc-luc" name="muc-luc"></a>
 
-* [1. Sơ Đồ Phả Hệ và Lịch Sử Tiến Hóa](#1-sơ-đồ-phả-hệ-và-lịch-sử-tiến-hóa)
-* [2. Nhóm I: Thuật Toán Tìm Kiếm Trên Đồ Thị Ô Lưới (Graph-Based)](#2-nhóm-i-thuật-toán-tìm-kiếm-trên-đồ-thị-ô-lưới-graph-based)
-  * [1. Dijkstra](#1-dijkstra)
-  * [2. Greedy Best-First Search (GBFS)](#2-greedy-best-first-search-gbfs)
-  * [3. A* (A-Star)](#3-a-a-star)
-  * [4. Jump Point Search (JPS)](#4-jump-point-search-jps)
-  * [5. Lifelong Planning A* (LPA*)](#5-lifelong-planning-a-lpa)
-  * [6. D* (Dynamic A*)](#6-d-dynamic-a)
-  * [7. D* Lite](#7-d-lite)
-  * [8. Theta* (Any-Angle A*)](#8-theta-any-angle-a)
-  * [9. Lazy Theta*](#9-lazy-theta)
-  * [10. Strict Theta* (S-Theta*)](#10-strict-theta-s-theta)
-  * [11. Voronoi Planner](#11-voronoi-planner)
-  * [12. Hybrid A*](#12-hybrid-a)
-  * [13. Lazy Planner](#13-lazy-planner)
-* [3. Nhóm II: Thuật Toán Lấy Mẫu Ngẫu Nhiên (Sample-Based)](#3-nhóm-ii-thuật-toán-lấy-mẫu-ngẫu-nhiên-sample-based)
-  * [14. RRT (Rapidly-exploring Random Tree)](#14-rrt-rapidly-exploring-random-tree)
-  * [15. RRT* (Optimal RRT)](#15-rrt-optimal-rrt)
-  * [16. RRT-Connect](#16-rrt-connect)
-  * [17. Informed RRT*](#17-informed-rrt)
-* [4. Nhóm III: Thuật Toán Tiến Hóa & Tối Ưu Bầy Đàn (Evolutionary & Swarm)](#4-nhóm-iii-thuật-toán-tiến-hóa--tối-ưu-bầy-đàn-evolutionary--swarm)
-  * [18. Particle Swarm Optimization (PSO)](#18-particle-swarm-optimization-pso)
-  * [19. Genetic Algorithm (GA)](#19-genetic-algorithm-ga)
-  * [20. Ant Colony Optimization (ACO)](#20-ant-colony-optimization-aco)
-* [5. Bảng Ma Trận So Sánh Tổng Hợp](#5-bảng-ma-trận-so-sánh-tổng-hợp)
-* [6. Cẩm Nang Chọn Thuật Toán Theo Ứng Dụng Thực Tế](#6-cẩm-nang-chọn-thuật-toán-theo-ứng-dụng-thực-tế)
+## 📑 Mục Lục Điều Hướng Chi Tiết
+
+> [!TIP]
+> **Nhấp chuột vào bất kỳ mục nào dưới đây để cuộn ngay đến phần nội dung tương ứng.**  
+> Ở cuối mỗi thuật toán đều có liên kết **`[⬆ Về Mục Lục]`** giúp bạn nhanh chóng quay lại danh sách này.
 
 ---
 
+### 📌 Phần 1: Phả Hệ & Lịch Sử Phát Triển
+* 🌲 [**1. Sơ Đồ Phả Hệ và Lịch Sử Tiến Hóa 20 Thuật Toán**](#so-do-pha-he)
+
+---
+
+### 🗺️ Phần 2: Nhóm I — Thuật Toán Đồ Thị Ô Lưới (Graph-Based)
+* 📍 [**Tổng Quan Nhóm I (Topic: `/GridBased/expand`)**](#nhom-1)
+  * 🔹 [1. Dijkstra](#dijkstra) — *Quét lan tỏa đẳng hướng, tối ưu tuyệt đối ô cờ*
+  * 🔹 [2. Greedy Best-First Search (GBFS)](#gbfs) — *Tham lam thuần Heuristic, tốc độ nhanh*
+  * 🔹 [3. A* (A-Star)](#astar) — *Tiêu chuẩn vàng: kết hợp g(n) và h(n)*
+  * 🔹 [4. Jump Point Search (JPS)](#jps) — *Phóng tầm nhìn, cắt tỉa ô cờ trống*
+  * 🔹 [5. Lifelong Planning A* (LPA*)](#lpa-star) — *Tái lập kế hoạch tăng dần (Incremental)*
+  * 🔹 [6. D* (Dynamic A*)](#dstar) — *Tìm đường động khi môi trường thay đổi*
+  * 🔹 [7. D* Lite](#dstar-lite) — *Tái lập kế hoạch đảo chiều Goal -> Start*
+  * 🔹 [8. Theta* (Any-Angle A*)](#theta-star) — *Triệt tiêu góc gấp răng cưa bằng Line-of-Sight*
+  * 🔹 [9. Lazy Theta*](#lazy-theta-star) — *Đánh giá lười tiết kiệm tối đa CPU*
+  * 🔹 [10. Strict Theta* (S-Theta*)](#s-theta-star) — *Bổ sung vùng đệm tránh cắt góc nguy hiểm*
+  * 🔹 [11. Voronoi Planner](#voronoi) — *Tối đa hóa khoảng cách an toàn với vật cản*
+  * 🔹 [12. Hybrid A*](#hybrid-astar) — *Không gian (x, y, θ) & mô hình xe Ackermann*
+  * 🔹 [13. Lazy Planner](#lazy-planner) — *Nối thẳng thô tối giản cho không gian thoáng*
+
+---
+
+### 🎲 Phần 3: Nhóm II — Thuật Toán Lấy Mẫu Ngẫu Nhiên (Sample-Based)
+* 📍 [**Tổng Quan Nhóm II (Topic: `/GridBased/random_tree`)**](#nhom-2)
+  * 🔹 [14. RRT (Rapidly-exploring Random Tree)](#rrt) — *Cây ngẫu nhiên bao phủ không gian*
+  * 🔹 [15. RRT* (Optimal RRT)](#rrt-star) — *Tiệm cận tối ưu nhờ Choose Parent & Rewire*
+  * 🔹 [16. RRT-Connect](#rrt-connect) — *Hai cây song song vượt khe hẹp siêu nhanh*
+  * 🔹 [17. Informed RRT*](#informed-rrt-star) — *Lấy mẫu tập trung trong siêu Elip co dần*
+
+---
+
+### 🧬 Phần 4: Nhóm III — Thuật Toán Tiến Hóa & Bầy Đàn (Evolutionary & Swarm)
+* 📍 [**Tổng Quan Nhóm III (Topic: `/GridBased/particles`)**](#nhom-3)
+  * 🔹 [18. Particle Swarm Optimization (PSO)](#pso) — *Tối ưu bầy đàn hạt trên B-Spline*
+  * 🔹 [19. Genetic Algorithm (GA)](#ga) — *Giải thuật di truyền chọn lọc tự nhiên*
+  * 🔹 [20. Ant Colony Optimization (ACO)](#aco) — *Mô phỏng đường mòn Pheromone đàn kiến*
+
+---
+
+### 📊 Phần 5: Tổng Hợp & Đánh Giá
+* 📈 [**5. Bảng Ma Trận So Sánh Tổng Hợp 20 Thuật Toán**](#bang-so-sanh)
+* 🧭 [**6. Cẩm Nang Chọn Thuật Toán Theo Ứng Dụng Thực Tế**](#cam-nang)
+
+---
+
+<a id="so-do-pha-he" name="so-do-pha-he"></a>
 ## 1. Sơ Đồ Phả Hệ và Lịch Sử Tiến Hóa
 
 Các thuật toán lập kế hoạch chuyển động phát triển liên tục theo các nhánh tư tưởng nhằm giải quyết các giới hạn cố hữu của thế hệ đi trước:
@@ -77,16 +103,22 @@ flowchart TD
     end
 ```
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="nhom-1" name="nhom-1"></a>
 ## 2. Nhóm I: Thuật Toán Tìm Kiếm Trên Đồ Thị Ô Lưới (Graph-Based)
 
 > [!NOTE]
 > Tất cả các thuật toán đồ thị trong dự án xuất bản vùng ô lưới đã duyệt qua topic:  
 > **Topic:** `/GridBased/expand` | **Type:** `nav_msgs/msg/OccupancyGrid`
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="dijkstra" name="dijkstra"></a>
 ### 1. Dijkstra
 
 | Thuộc tính | Chi tiết |
@@ -113,8 +145,11 @@ Trong đó:
 * **Ưu điểm:** Đảm bảo 100% tìm ra đường đi ngắn nhất trên đồ thị ô lưới.
 * **Nhược điểm:** Tìm kiếm đẳng hướng (quét lan tỏa tròn/elip đều ra mọi phía), duyệt rất nhiều ô không cần thiết nằm ngược hướng với đích đến.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="gbfs" name="gbfs"></a>
 ### 2. Greedy Best-First Search (GBFS)
 
 | Thuộc tính | Chi tiết |
@@ -138,8 +173,11 @@ Trong đó:
 * **Đột phá:** Tốc độ tìm kiếm nhanh hơn Dijkstra từ 10 đến 50 lần vì chỉ tập trung mở rộng về hướng mục tiêu, không tốn tài nguyên quét tỏa ra xung quanh.
 * **Hạn chế:** Không bảo đảm nghiệm tối ưu. Dễ bị mắc kẹt sâu trong các ngõ cụt dạng chữ U hoặc chướng ngại vật lõm trước khi thoát ra được.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="astar" name="astar"></a>
 ### 3. A* (A-Star)
 
 | Thuộc tính | Chi tiết |
@@ -159,8 +197,11 @@ Trong đó:
 * **Phát triển từ Dijkstra & GBFS:** A* kết hợp hoàn hảo ưu điểm của cả hai: vừa hướng về đích nhờ $h(n)$ (như GBFS), vừa không đi chệch khỏi đường tối ưu nhờ $g(n)$ (như Dijkstra).
 * Khắc phục vùng quét vô định hình cầu của Dijkstra thành hình elip hẹp hướng thẳng về đích. Đây là chuẩn mực tìm đường tĩnh 2D trong robot học.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="jps" name="jps"></a>
 ### 4. Jump Point Search (JPS)
 
 | Thuộc tính | Chi tiết |
@@ -194,8 +235,11 @@ void JPSPathPlanner::_jump(const JNode& node, OpenList& open_list) {
 
 * **Hiệu quả:** Giảm số lượng phần tử cần lưu trong `open_list` từ 90% đến 98% so với A*, tốc độ tăng gấp 5 - 10 lần nhưng vẫn đảm bảo đường đi tối ưu hoàn toàn.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="lpa-star" name="lpa-star"></a>
 ### 5. Lifelong Planning A* (LPA*)
 
 | Thuộc tính | Chi tiết |
@@ -217,8 +261,11 @@ Duy trì 2 giá trị ước lượng chi phí cho mỗi đỉnh $s$:
 * **Vấn đề của A*:** Khi bản đồ thay đổi cục bộ (xuất hiện thêm vật cản mới), A* phải xóa bỏ toàn bộ cây tìm kiếm và tính lại từ đầu từ điểm $Start$.
 * **Đổi mới của Sven Koenig (2002):** LPA* chỉ đưa những đỉnh bị mất tính nhất quán ($g(s) \neq rhs(s)$) vào hàng đợi để cập nhật lại, tái sử dụng phần lớn cây tìm kiếm đã tính từ lần trước, tiết kiệm tối đa CPU.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="dstar" name="dstar"></a>
 ### 6. D* (Dynamic A*)
 
 | Thuộc tính | Chi tiết |
@@ -236,8 +283,11 @@ Duy trì 2 giá trị ước lượng chi phí cho mỗi đỉnh $s$:
 #### 🔹 Phát triển & Đổi mới
 * Thuật toán D* nguyên bản (Anthony Stentz - 1994) là bước đột phá đầu tiên cho phép robot di động vừa di chuyển vừa quét laser: khi gặp vật cản mới chặn đường, D* cập nhật cục bộ ngay lập tức và bẻ lái mà không cần dừng lại tính lại toàn bộ bản đồ.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="dstar-lite" name="dstar-lite"></a>
 ### 7. D* Lite
 
 | Thuộc tính | Chi tiết |
@@ -257,8 +307,11 @@ $$k_m \leftarrow k_m + h(S_{last}, S_{start})$$
 * **So với D* cổ điển:** D* Lite đạt được cùng hiệu năng và kết quả tối ưu như D* nhưng mã nguồn tinh giản hơn, dễ bảo trì hơn rất nhiều (dựa trên toán học của LPA* thay vì máy trạng thái phức tạp RAISE/LOWER).
 * **So với LPA*:** Đảo chiều tìm kiếm từ Goal về Start, giúp robot có thể di chuyển liên tục mà cây đường đi về Goal vẫn giữ nguyên hiệu lực.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="theta-star" name="theta-star"></a>
 ### 8. Theta* (Any-Angle A*)
 
 | Thuộc tính | Chi tiết |
@@ -280,8 +333,11 @@ Trong Theta*, thuật toán kiểm tra đường ngắm thẳng (**Line-of-Sight
 * **Vấn đề của A*:** Quỹ đạo của A* bị giới hạn theo các hướng rời rạc của ô lưới ($0^\circ, 45^\circ, 90^\circ,...$), tạo ra đường đi "răng cưa" thiếu tự nhiên, tốn thêm chiều dài và gây khó khăn cho việc bẻ lái.
 * **Đổi mới:** Theta* cho phép đường nối xuyên thẳng qua các ô lưới theo mọi góc tùy ý (Any-Angle) nếu giữa 2 điểm không có vật cản che khuất. Quỹ đạo tạo ra gồm các đoạn thẳng dài, rất mượt.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="lazy-theta-star" name="lazy-theta-star"></a>
 ### 9. Lazy Theta*
 
 | Thuộc tính | Chi tiết |
@@ -298,8 +354,11 @@ Trong Theta*, thuật toán kiểm tra đường ngắm thẳng (**Line-of-Sight
   3. Nếu kiểm tra va chạm phát hiện bị cản, nó mới lùi về chọn lại $parent(s') = s$ (Path 1).
 * **Kết quả:** Giảm số lần kiểm tra va chạm từ 2 đến 5 lần so với Theta* tiêu chuẩn, tăng tốc độ tính toán rõ rệt.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="s-theta-star" name="s-theta-star"></a>
 ### 10. Strict Theta* (S-Theta*)
 
 | Thuộc tính | Chi tiết |
@@ -312,8 +371,11 @@ Trong Theta*, thuật toán kiểm tra đường ngắm thẳng (**Line-of-Sight
 * **Vấn đề của Theta*:** Vì nối thẳng góc, đường đi Any-Angle của Theta* thường "cắt ngọt" sát mép các góc vuông của chướng ngại vật (Corner Cutting), dễ gây va quẹt thân xe ngoài thực tế.
 * **Đổi mới:** S-Theta* siết chặt điều kiện Line-of-Sight bằng cách kiểm tra thêm biên an toàn xung quanh tia ngắm và hạn chế cắt góc nhọn, đảm bảo đường đi luôn cách vật cản một bán kính an toàn tối thiểu.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="voronoi" name="voronoi"></a>
 ### 11. Voronoi Planner
 
 | Thuộc tính | Chi tiết |
@@ -334,8 +396,11 @@ Trong Theta*, thuật toán kiểm tra đường ngắm thẳng (**Line-of-Sight
 #### 🔹 So sánh với A*
 A* tìm đường ngắn nhất nhưng luôn bám sát mép tường. Voronoi Planner từ bỏ mục tiêu đường ngắn nhất để đạt được **độ an toàn tối đa**, đặc biệt thích hợp cho xe chở hàng giá trị cao trong nhà máy, kho bãi.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="hybrid-astar" name="hybrid-astar"></a>
 ### 12. Hybrid A*
 
 | Thuộc tính | Chi tiết |
@@ -357,8 +422,11 @@ A* tìm đường ngắn nhất nhưng luôn bám sát mép tường. Voronoi Pl
 #### 🔹 Đột phá của Đại học Stanford (DARPA Urban Challenge 2008)
 A* truyền thống coi robot là chất điểm không kích thước, có thể quay tại chỗ. Hybrid A* tạo ra quỹ đạo khả thi 100% về mặt động học tay lái cho xe ô tô thực tế (`nanocar`), loại bỏ hoàn toàn hiện tượng bẻ ngoặt gấp bất khả thi.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="lazy-planner" name="lazy-planner"></a>
 ### 13. Lazy Planner
 
 | Thuộc tính | Chi tiết |
@@ -370,16 +438,22 @@ A* truyền thống coi robot là chất điểm không kích thước, có th�
 #### 🔹 Nguyên lý hoạt động
 Nối thẳng đường chim bay từ $Start$ đến $Goal$, kiểm tra va chạm trên đoạn thẳng; nếu có chướng ngại vật thì chèn thêm điểm tránh né trung gian tối thiểu. Thuật toán này phù hợp cho môi trường cực kỳ rộng thoáng, tài nguyên tính toán xấp xỉ bằng 0.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="nhom-2" name="nhom-2"></a>
 ## 3. Nhóm II: Thuật Toán Lấy Mẫu Ngẫu Nhiên (Sample-Based)
 
 > [!NOTE]
 > Tất cả thuật toán nhóm này xuất bản cấu trúc cây ngẫu nhiên qua topic:  
 > **Topic:** `/GridBased/random_tree` | **Type:** `visualization_msgs/msg/Marker` (Line List màu xanh lá cây)
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="rrt" name="rrt"></a>
 ### 14. RRT (Rapidly-exploring Random Tree)
 
 | Thuộc tính | Chi tiết |
@@ -401,8 +475,11 @@ Nối thẳng đường chim bay từ $Start$ đến $Goal$, kiểm tra va chạ
 * **Ưu điểm:** Khám phá không gian rất nhanh, không cần rời rạc hóa bản đồ thành ô lưới, hoạt động tốt trong không gian nhiều chiều.
 * **Nhược điểm:** Đường đi gồ ghề, không tối ưu do tính chất ngẫu nhiên.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="rrt-star" name="rrt-star"></a>
 ### 15. RRT* (Optimal RRT)
 
 | Thuộc tính | Chi tiết |
@@ -421,8 +498,11 @@ Nối thẳng đường chim bay từ $Start$ đến $Goal$, kiểm tra va chạ
 
 * **Kết quả:** Đạt tính **tối ưu tiệm cận**: chiều dài đường đi liên tục ngắn dần và tiến về nghiệm tối ưu khi số mẫu tăng lên.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="rrt-connect" name="rrt-connect"></a>
 ### 16. RRT-Connect
 
 | Thuộc tính | Chi tiết |
@@ -438,8 +518,11 @@ Nối thẳng đường chim bay từ $Start$ đến $Goal$, kiểm tra va chạ
   * Cây $T_b$ mọc từ $Goal$.
 * Mỗi vòng lặp, sau khi $T_a$ tạo điểm mới $q_{new}$, cây $T_b$ lập tức mở rộng liên tục nhiều bước (Greedy Extension) về thẳng $q_{new}$. Khi hai cây chạm nhau, đường đi được tạo thành ngay lập tức. Tốc độ nhanh hơn RRT đơn hướng từ 5 đến 20 lần.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="informed-rrt-star" name="informed-rrt-star"></a>
 ### 17. Informed RRT*
 
 | Thuộc tính | Chi tiết |
@@ -458,8 +541,11 @@ Phương trình Elip có trục lớn $a = c_{best} / 2$ và trục nhỏ $b = \
 * **Vấn đề của RRT*:** Sau khi đã tìm thấy đường, RRT* vẫn tiếp tục lấy mẫu ngẫu nhiên đồng đều trên toàn bộ bản đồ. Việc lấy mẫu ở những vùng xa xôi bên ngoài là lãng phí tài nguyên.
 * **Đổi mới:** Thay vì lấy mẫu toàn bản đồ, Informed RRT* chỉ lấy mẫu bên trong hình elip. Đường đi càng được tối ưu thì $c_{best}$ càng giảm, hình elip càng co hẹp lại, dồn 100% năng lượng tính toán vào hành lang quanh đường đi để hội tụ về nghiệm tối ưu cực nhanh.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="nhom-3" name="nhom-3"></a>
 ## 4. Nhóm III: Thuật Toán Tiến Hóa & Tối Ưu Bầy Đàn (Evolutionary & Swarm)
 
 > [!NOTE]
@@ -468,8 +554,11 @@ Phương trình Elip có trục lớn $a = c_{best} / 2$ và trục nhỏ $b = \
 
 Trong dự án này, đường đi được tham số hóa thành chuỗi $N$ điểm điều khiển (**Control Points**) của đường cong **B-Spline** bậc cao ([`BSplineCurve`](file:///home/picasso/ros2_motion_planning/src/core/common/include/common/curve/bspline_curve.h)), giúp quỹ đạo luôn đạt độ mượt liên tục bậc hai ($C^2$).
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="pso" name="pso"></a>
 ### 18. Particle Swarm Optimization (PSO)
 
 | Thuộc tính | Chi tiết |
@@ -493,8 +582,11 @@ Trong đó:
 #### 🔹 Hàm thích nghi (Fitness Function)
 Hàm mục tiêu tích hợp đa tiêu chí: tối thiểu hóa chiều dài B-spline, tối đa hóa khoảng cách với vật cản và giới hạn độ cong (Curvature) để xe vào cua êm dịu.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="ga" name="ga"></a>
 ### 19. Genetic Algorithm (GA)
 
 | Thuộc tính | Chi tiết |
@@ -510,8 +602,11 @@ Hàm mục tiêu tích hợp đa tiêu chí: tối thiểu hóa chiều dài B-s
 4. **Lai ghép (Crossover):** Ghép chéo các đoạn điểm điều khiển giữa hai cá thể cha mẹ để sinh ra đường đi con kế thừa ưu điểm của cả hai.
 5. **Đột biến (Mutation):** Với xác suất nhỏ, dịch chuyển ngẫu nhiên tọa độ một số điểm điều khiển để thoát khỏi các nghiệm cực tiểu cục bộ.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="aco" name="aco"></a>
 ### 20. Ant Colony Optimization (ACO)
 
 | Thuộc tính | Chi tiết |
@@ -534,8 +629,11 @@ $$\tau_{ij} \leftarrow (1 - \rho)\tau_{ij} + \Delta \tau_{ij}$$
 
 Đoạn đường nào ngắn hơn và an toàn hơn sẽ có lượng kiến qua lại nhiều hơn, nồng độ pheromone tăng nhanh hơn, dẫn dắt toàn bộ đàn kiến hội tụ về tuyến đường tối ưu.
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="bang-so-sanh" name="bang-so-sanh"></a>
 ## 5. Bảng Ma Trận So Sánh Tổng Hợp
 
 | Thuật Toán | Nhóm | Tính Tối Ưu | Độ Mượt Quỹ Đạo | Tốc Độ Tính Toán | Ràng Buộc Góc Lái (Non-holonomic) | Topic RViz2 |
@@ -561,8 +659,11 @@ $$\tau_{ij} \leftarrow (1 - \rho)\tau_{ij} + \Delta \tau_{ij}$$
 | **GA** | Evolutionary | Gần tối ưu | Tuyệt đối (B-Spline) | Chậm | Gián tiếp (qua độ cong) | `/GridBased/particles` |
 | **ACO** | Swarm | Gần tối ưu | Tuyệt đối (B-Spline) | Chậm | Gián tiếp (qua độ cong) | `/GridBased/particles` |
 
+[⬆ Về Mục Lục](#muc-luc)
+
 ---
 
+<a id="cam-nang" name="cam-nang"></a>
 ## 6. Cẩm Nang Chọn Thuật Toán Theo Ứng Dụng Thực Tế
 
 > [!TIP]
@@ -582,3 +683,7 @@ flowchart TD
     EnvCheck -- "Cần đường cong êm dịu bậc 2 cho chở VIP/hàng lỏng" --> UsePSO["Chọn PSO (B-Spline)<br>(Quỹ đạo cong uốn lượn liên tục C²)"]
     EnvCheck -- "Cần tính toán nhanh nhất trên bản đồ tĩnh" --> UseJPS["Chọn JPS hoặc A*<br>(Chuẩn mực vàng cho hiệu năng và độ ngắn)"]
 ```
+
+---
+
+[⬆ Về Mục Lục](#muc-luc)
